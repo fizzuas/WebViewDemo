@@ -58,8 +58,8 @@ class MainActivity : AppCompatActivity() {
 
 
 //        webSettings.javaScriptEnabled=true
-        webview.loadUrl("http://192.168.0.111:9355/上传排行榜.xls.htm")
-//        webview.loadUrl("file:///android_asset/web/index_table.html")
+//        webview.loadUrl("http://192.168.0.111:9355/上传排行榜.xls.htm")
+        webview.loadUrl("file:///android_asset/web/index.html")
     }
 
 
