@@ -1,72 +1,104 @@
 package com.kydw.webviewdemo
 
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.net.http.SslError
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-import com.tencent.smtt.sdk.WebChromeClient
-import com.tencent.smtt.sdk.WebSettings
-import com.tencent.smtt.sdk.WebView
+import android.webkit.SslErrorHandler
+import android.webkit.ValueCallback
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+
+const val TAG: String = "oyx"
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val js = "javascript:document.getElementById('name').value = '\" + 家政"
+        webview.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
+                    return false
+                } else try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    view!!.context.startActivity(intent)
+                    return true
+                } catch (e: Exception) {
+                    Log.i(TAG, "shouldOverrideUrlLoading Exception:$e")
+                    return true
+                }
 
-       webview.webChromeClient=object : WebChromeClient(){
-           override fun onReceivedTitle(view: WebView?, title: String?) {
-               super.onReceivedTitle(view, title)
-               tv.text = title
-           }
+            }
 
-       }
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+               view!!.evaluateJavascript(js, ValueCallback {
+                   Log.i(TAG,it)
 
-//        webview.webViewClient=object : WebViewClient(){
-//            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-//                view?.loadUrl(url)
-//                return true
-//            }
-//        }
+               })
+            }
 
+            override fun onReceivedSslError(
+                view: WebView?,
+                handler: SslErrorHandler?,
+                error: SslError?
+            ) {
+                super.onReceivedSslError(view, handler, error)
+            }
+        }
 
-        webview.setOnTouchListener(object : View.OnTouchListener {
+        setWebView(webview)
+        webview.loadUrl("https://www.baidu.com/")
+    }
+
+    @SuppressLint("ClickableViewAccessibility", "SetJavaScriptEnabled")
+    private fun setWebView(wv: android.webkit.WebView) {
+        wv.setOnTouchListener(object : View.OnTouchListener {
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
                 if (event?.action == MotionEvent.ACTION_UP) {
-                    webview.requestDisallowInterceptTouchEvent(false)
+                    wv.requestDisallowInterceptTouchEvent(false)
                 } else {
-                    webview.requestDisallowInterceptTouchEvent(true)
+                    wv.requestDisallowInterceptTouchEvent(true)
                 }
                 return false
             }
 
         })
-        val webSettings=webview.settings
+        val webSettings = wv.settings
 
         //设置true,才能让Webivew支持<meta>标签的viewport属性
-        webSettings.useWideViewPort=true
-        webSettings.loadWithOverviewMode=true
+        webSettings.useWideViewPort = true
+        webSettings.loadWithOverviewMode = true
         //设置可以手势支持缩放
-        webSettings.setSupportZoom(true)
-        webSettings.builtInZoomControls=true
+        webSettings.setSupportZoom(false)
+        webSettings.builtInZoomControls = true
         //设定缩放控件隐藏
-        webSettings.displayZoomControls=false
-        webview.setInitialScale(100)
+        webSettings.displayZoomControls = true
 
+//      <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"/>百度不支持缩放
+//        wv.setInitialScale(100)
 
-//        webSettings.javaScriptEnabled=true
-//        webview.loadUrl("http://192.168.0.111:9355/上传排行榜.xls.htm")
-        webview.loadUrl("file:///android_asset/web/index.html")
+        webSettings.domStorageEnabled = true
+
+        webSettings.javaScriptEnabled = true
+
+//        webSettings.userAgentString="User-Agent:Android"
     }
 
 
     override fun onBackPressed() {
-        if(webview.canGoBack()){
+        if (webview.canGoBack()) {
             webview.goBack()
-        }else{
+        } else {
             super.onBackPressed()
         }
 
