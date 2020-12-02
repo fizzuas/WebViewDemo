@@ -2,6 +2,7 @@ package com.kydw.webviewdemo
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
 import android.os.Bundle
@@ -13,12 +14,14 @@ import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
-import java.nio.charset.Charset
 
 
 const val TAG: String = "oyx"
 
 class MainActivity : AppCompatActivity() {
+    val obj = InJavaScriptLocalObj()
+    val baiduIndexUrl="http://www.baidu.com/"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -38,53 +41,48 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                Log.i(TAG, "onPageStarted")
+
+            }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-
                 Log.i(TAG, "onPageFinished")
+
+
+
                 // 在结束加载网页时会回调
-
-                val jsGetHtml = "document.execCommand('selectall');" +
-                        "var txt;" +
-                        "if (window.getSelection) {" +
-                        "txt = window.getSelection().toString();" +
-                        "} else if (window.document.getSelection) {" +
-                        "txt = window.document.getSelection().toString();" +
-                        "} else if (window.document.selection) {" +
-                        "txt = window.document.selection.createRange().text;" +
-                        "}" +
-                        "var charactersets = document.characterSet;" +
-                        "window.java_obj.saveHtml(txt,charactersets);"
-
-                val jsGetHtml2 = "window.java_obj.showSource" +
-                        "('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');"
-
-                var jsInject = "var script = document.createElement('script');"
-                jsInject += "script.type = 'text/javascript';"
-                jsInject += "window.alert('Js injection success')"
+//                val jsGetHtml = "window.java_obj.showSource" +
+//                        "('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');"
+//
+//                val jsSetTitleToLocal =
+//                    "window.java_obj.setPageTitle" + "(document.getElementsByTagName('title')[0].innerText);"
+//                view!!.loadUrl("javascript:" + jsSetTitleToLocal)
 
 
-                var jsAlertInfo = "var script = document.createElement('script');"
-                jsAlertInfo += "script.type = 'text/javascript';"
-                jsAlertInfo += "window.alert('window.innerWidth='+window.innerWidth+'," +
-                        "document.title='+document.title+" +
-                        "',location.host='+location.host)"
+                Log.i(TAG, "url="+url)
+                if(url.equals(baiduIndexUrl)){
+                    //首页，提交表单
+                    val jsFormInput = "document.getElementsByName('word')[0].value='家政';" +
+                            "var nodes=document.getElementsByTagName('form');" +
+                            "var lastNode=nodes[0].lastChild;"
+                            "function time(){lastNode.click();} " +
+                            "setTimeout(time,5000);"
+                    view!!.loadUrl("javascript:" + jsFormInput)
+                }else{
+                    //Next 页
+//                    val  jsNext="function nextClick(){document.getElementsByClassName('nextOnly')[0].click();}"+
+//                            "setTimeout(nextClick,2000);"
+//
+//
+//
+//                    view!!.loadUrl("javascript:" + jsNext)
 
-                var jsAlertP="window.alert('"
-                var jsAlertS="');"
-
-                //要查找DOM树的某个节点，需要从document对象开始查找。最常用的查找是根据ID和Tag Name
-
-                var jsSetInput="document.getElementById('index-kw').defaultValue='家政';"
+                }
 
 
-                var  jsPerformClick="document.getElementById('index-kw').defaultValue;"
 
-
-                var jsGetNextNode="document.getElementById('index-kw').n)extSibing.click("
-
-                view!!.loadUrl("javascript:"+jsPerformClick+"js"+jsAlertS)
 //                view!!.loadUrl("javascript:$jsPerformClick")
 
 //                // 获取解析<meta name="share-description" content="获取到的值">
@@ -101,6 +99,8 @@ class MainActivity : AppCompatActivity() {
 //                        Log.i(TAG, it)
 //
 //                    })
+                super.onPageFinished(view, url)
+
 
             }
 
@@ -115,10 +115,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         webview.webChromeClient = WebChromeClient()
-        webview.addJavascriptInterface(InJavaScriptLocalObj(), "java_obj")
+
+        webview.addJavascriptInterface(obj, "java_obj")
         setWebView(webview)
-//        webview.loadUrl("javascript:javacalljs()")
-//        webview.loadUrl("javascript:javacalljswith(\"JAVA调用了JS的有参函数\")")
         webview.loadUrl("http://www.baidu.com")
     }
 
@@ -133,7 +132,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 return false
             }
-
         })
         val webSettings = wv.settings
 
@@ -156,6 +154,7 @@ class MainActivity : AppCompatActivity() {
 
         webSettings.javaScriptEnabled = true
 
+        webSettings.userAgentString = "User-Agent:Android"
 
     }
 
@@ -171,6 +170,7 @@ class MainActivity : AppCompatActivity() {
 }
 
 class InJavaScriptLocalObj {
+    var title = ""
 
     @JavascriptInterface
     fun showSource(html: String) {
@@ -194,6 +194,11 @@ class InJavaScriptLocalObj {
         File(Environment.getExternalStorageDirectory().absolutePath + File.separator + "save.html").writeText(
             html
         )
+    }
 
+    @JavascriptInterface
+    fun setPageTitle(title: String) {
+        Log.i(TAG, "setPageTitle"+title)
+        this.title = title
     }
 }
