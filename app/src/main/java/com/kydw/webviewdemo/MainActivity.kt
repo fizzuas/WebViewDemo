@@ -14,13 +14,15 @@ import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
+import java.nio.charset.Charset
 
 
 const val TAG: String = "oyx"
 
 class MainActivity : AppCompatActivity() {
     val obj = InJavaScriptLocalObj()
-    val baiduIndexUrl="http://www.baidu.com/"
+    val baiduIndexUrl = "http://www.baidu.com/"
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,8 +52,6 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 Log.i(TAG, "onPageFinished")
 
-
-
                 // 在结束加载网页时会回调
 //                val jsGetHtml = "window.java_obj.showSource" +
 //                        "('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');"
@@ -61,27 +61,27 @@ class MainActivity : AppCompatActivity() {
 //                view!!.loadUrl("javascript:" + jsSetTitleToLocal)
 
 
-                Log.i(TAG, "url="+url)
-                if(url.equals(baiduIndexUrl)){
+                Log.i(TAG, "url=" + url)
+                if (url.equals(baiduIndexUrl)) {
                     //首页，提交表单
                     val jsFormInput = "document.getElementsByName('word')[0].value='家政';" +
                             "var nodes=document.getElementsByTagName('form');" +
-                            "var lastNode=nodes[0].lastChild;"
+                            "var lastNode=nodes[0].lastChild;" +
                             "function time(){lastNode.click();} " +
                             "setTimeout(time,5000);"
-                    view!!.loadUrl("javascript:" + jsFormInput)
-                }else{
+                    val js_form = application.assets.open("js_bd_2second.js").bufferedReader().use {
+                        it.readText()
+                    }
+                    view!!.loadUrl("javascript:" + js_form)
+                } else {
                     //Next 页
-//                    val  jsNext="function nextClick(){document.getElementsByClassName('nextOnly')[0].click();}"+
-//                            "setTimeout(nextClick,2000);"
-//
-//
-//
-//                    view!!.loadUrl("javascript:" + jsNext)
+                    val js_to_next = application.assets.open("js_to_next.js").bufferedReader().use {
+                        it.readText()
+                    }
 
+
+                    view!!.loadUrl("javascript:" + js_to_next)
                 }
-
-
 
 //                view!!.loadUrl("javascript:$jsPerformClick")
 
@@ -100,8 +100,6 @@ class MainActivity : AppCompatActivity() {
 //
 //                    })
                 super.onPageFinished(view, url)
-
-
             }
 
             override fun onReceivedSslError(
@@ -178,8 +176,6 @@ class InJavaScriptLocalObj {
         File(Environment.getExternalStorageDirectory().absolutePath + File.separator + "show.html").writeText(
             html
         )
-
-
     }
 
 
@@ -198,7 +194,26 @@ class InJavaScriptLocalObj {
 
     @JavascriptInterface
     fun setPageTitle(title: String) {
-        Log.i(TAG, "setPageTitle"+title)
+        Log.i(TAG, "setPageTitle" + title)
         this.title = title
     }
+
+    @JavascriptInterface
+    fun saveLog(content: String) {
+        appendFile(
+            content,
+            Environment.getExternalStorageDirectory().absolutePath + File.separator + "baidu_dianji.txt"
+        )
+    }
+
+
+}
+
+fun appendFile(text: String, destFile: String) {
+    Log.i(TAG, "saveLog")
+    val f = File(destFile)
+    if (!f.exists()) {
+        f.createNewFile()
+    }
+    f.appendText(text, Charset.defaultCharset())
 }
