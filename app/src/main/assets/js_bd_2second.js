@@ -3,3 +3,5 @@ var nodes=document.getElementsByTagName('form');
 var lastNode=nodes[0].lastChild;
 function time(){lastNode.click()}
 setTimeout(time,3000);
+
+

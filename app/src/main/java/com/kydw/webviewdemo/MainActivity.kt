@@ -1,34 +1,65 @@
 package com.kydw.webviewdemo
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
-import android.os.Bundle
-import android.os.Environment
+import android.os.*
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
+import java.lang.ref.WeakReference
 import java.nio.charset.Charset
 
 
 const val TAG: String = "oyx"
 
 class MainActivity : AppCompatActivity() {
-    val obj = InJavaScriptLocalObj()
+    val handler = MyHandler(this)
+
+    class MyHandler(activity: MainActivity) : Handler() {
+        private val mActivity: WeakReference<MainActivity> = WeakReference(activity)
+
+        override fun handleMessage(msg: Message) {
+            if (mActivity.get() == null) {
+                return
+            }
+            val activity = mActivity.get()
+            when (msg.what) {
+                0 -> {
+                    activity?.startGet()
+                }
+                else -> {
+                }
+            }
+        }
+    }
+
+    fun startGet() {
+        webview.loadUrl("http://www.baidu.com")
+    }
+
+    val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "http://www.baidu.com/"
+
+    //    m.51baomu.cn
+    val targetSiteKeyInfo = "baike.baidu.com"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val js = "javascript:document.getElementById('name').value = '\" + 家政"
         webview.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
@@ -45,12 +76,12 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                Log.i(TAG, "onPageStarted")
+                Log.i(TAG, "onPageStarted = " + url)
 
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                Log.i(TAG, "onPageFinished")
+                Log.i(TAG, "onPageFinished = " + url)
 
                 // 在结束加载网页时会回调
 //                val jsGetHtml = "window.java_obj.showSource" +
@@ -61,44 +92,29 @@ class MainActivity : AppCompatActivity() {
 //                view!!.loadUrl("javascript:" + jsSetTitleToLocal)
 
 
-                Log.i(TAG, "url=" + url)
                 if (url.equals(baiduIndexUrl)) {
+                    Log.e(TAG, "首页点击")
                     //首页，提交表单
-                    val jsFormInput = "document.getElementsByName('word')[0].value='家政';" +
-                            "var nodes=document.getElementsByTagName('form');" +
-                            "var lastNode=nodes[0].lastChild;" +
-                            "function time(){lastNode.click();} " +
-                            "setTimeout(time,5000);"
-                    val js_form = application.assets.open("js_bd_2second.js").bufferedReader().use {
+                    val js_form =
+                        application.assets.open("js_bd_2second.js").bufferedReader().use {
+                            it.readText()
+                        }
+                    view!!.loadUrl("javascript:$js_form")
+                } else if (url!!.contains(targetSiteKeyInfo)) {
+                    Log.e(TAG, "目标页加载成功=$url")
+                    val js_look = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
                     }
-                    view!!.loadUrl("javascript:" + js_form)
-                } else {
+                    view!!.loadUrl("javascript:$js_look")
+                } else if (url.contains("baidu.com")) {
+                    Log.e(TAG, "下一页=$url")
                     //Next 页
-                    val js_to_next = application.assets.open("js_to_next.js").bufferedReader().use {
-                        it.readText()
-                    }
-
-
-                    view!!.loadUrl("javascript:" + js_to_next)
+                    val js_to_next =
+                        application.assets.open("js_to_next.js").bufferedReader().use {
+                            it.readText()
+                        }
+                    view!!.loadUrl("javascript:$js_to_next")
                 }
-
-//                view!!.loadUrl("javascript:$jsPerformClick")
-
-//                // 获取解析<meta name="share-description" content="获取到的值">
-//                view!!.loadUrl(
-//                    "javascript:window.java_obj.showDescription("
-//                            + "document.querySelector('meta[name=\"share-description\"]').getAttribute('content')"
-//                            + ");"
-//                )
-
-
-//                view!!.evaluateJavascript(
-//                    "javascript: + window.alert('Js injection success')",
-//                    ValueCallback {
-//                        Log.i(TAG, it)
-//
-//                    })
                 super.onPageFinished(view, url)
             }
 
@@ -111,12 +127,12 @@ class MainActivity : AppCompatActivity() {
                 handler!!.proceed();
             }
         }
-
         webview.webChromeClient = WebChromeClient()
 
         webview.addJavascriptInterface(obj, "java_obj")
         setWebView(webview)
         webview.loadUrl("http://www.baidu.com")
+
     }
 
     @SuppressLint("ClickableViewAccessibility", "SetJavaScriptEnabled")
@@ -167,8 +183,7 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-class InJavaScriptLocalObj {
-    var title = ""
+class InJavaScriptLocalObj(val context: Context) {
 
     @JavascriptInterface
     fun showSource(html: String) {
@@ -178,39 +193,36 @@ class InJavaScriptLocalObj {
         )
     }
 
-
-    @JavascriptInterface
-    fun showDescription(str: String) {
-        Log.i(TAG, "====>html_showDescription=$str")
-    }
-
-    @JavascriptInterface
-    fun saveHtml(html: String, characterSet: String) {
-        Log.i(TAG, "====>saveHtml characterSet$characterSet")
-        File(Environment.getExternalStorageDirectory().absolutePath + File.separator + "save.html").writeText(
-            html
-        )
-    }
-
-    @JavascriptInterface
-    fun setPageTitle(title: String) {
-        Log.i(TAG, "setPageTitle" + title)
-        this.title = title
-    }
-
     @JavascriptInterface
     fun saveLog(content: String) {
+        Log.i(TAG, "saveLog")
         appendFile(
             content,
             Environment.getExternalStorageDirectory().absolutePath + File.separator + "baidu_dianji.txt"
         )
     }
 
+    @JavascriptInterface
+    fun requestFinished() {
+        Log.i(TAG, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
+        GlobalScope.launch(Dispatchers.Main) {
+            Log.i(TAG, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
+        }
+
+    }
+
+    @JavascriptInterface
+    fun finish() {
+        Log.i(TAG, "finish")
+        GlobalScope.launch(Dispatchers.Main) {
+            delay(5000)
+            (context as MainActivity).handler.sendEmptyMessage(0)
+        }
+    }
 
 }
 
 fun appendFile(text: String, destFile: String) {
-    Log.i(TAG, "saveLog")
     val f = File(destFile)
     if (!f.exists()) {
         f.createNewFile()
