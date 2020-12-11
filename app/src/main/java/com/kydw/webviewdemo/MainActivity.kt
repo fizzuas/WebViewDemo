@@ -1,5 +1,6 @@
 package com.kydw.webviewdemo
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.os.*
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.WindowManager
 import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
@@ -53,12 +55,25 @@ class MainActivity : AppCompatActivity() {
     val baiduIndexUrl = "http://www.baidu.com/"
 
     //    m.51baomu.cn
-    val targetSiteKeyInfo = "baike.baidu.com"
+    val targetSiteKeyInfo = "www.wjjz.net"
+
+
+    override fun onResume() {
+        super.onResume()
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        PermissionUtil.askForRequiredPermissions(this)
 
         webview.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
@@ -93,7 +108,7 @@ class MainActivity : AppCompatActivity() {
 
 
                 if (url.equals(baiduIndexUrl)) {
-                    Log.e(TAG, "首页点击")
+                    Log.e(TAG, "百度一下页面")
                     //首页，提交表单
                     val js_form =
                         application.assets.open("js_bd_2second.js").bufferedReader().use {
@@ -121,7 +136,7 @@ class MainActivity : AppCompatActivity() {
             override fun onReceivedSslError(
                 view: WebView?,
                 handler: SslErrorHandler?,
-                error: SslError?
+                error: SslError?,
             ) {
                 // let's ignore ssl error
                 handler!!.proceed();
@@ -132,6 +147,8 @@ class MainActivity : AppCompatActivity() {
         webview.addJavascriptInterface(obj, "java_obj")
         setWebView(webview)
         webview.loadUrl("http://www.baidu.com")
+
+        webview.keepScreenOn = true
 
     }
 
@@ -184,7 +201,6 @@ class MainActivity : AppCompatActivity() {
 }
 
 class InJavaScriptLocalObj(val context: Context) {
-
     @JavascriptInterface
     fun showSource(html: String) {
         Log.i(TAG, "====>html_showSource=$html")
@@ -196,17 +212,19 @@ class InJavaScriptLocalObj(val context: Context) {
     @JavascriptInterface
     fun saveLog(content: String) {
         Log.i(TAG, "saveLog")
-        appendFile(
-            content,
-            Environment.getExternalStorageDirectory().absolutePath + File.separator + "baidu_dianji.txt"
-        )
+        if (PermissionUtil.hasRequiredPermissions(context))
+            appendFile(
+                content,
+                Environment.getExternalStorageDirectory().absolutePath + File.separator + "baidu_dianji.txt"
+            )
     }
 
     @JavascriptInterface
     fun requestFinished() {
         Log.i(TAG, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
         GlobalScope.launch(Dispatchers.Main) {
-            Log.i(TAG, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
+            // 40页都找不到，下一页异常
+            (context as MainActivity).handler.sendEmptyMessage(0)
         }
 
     }
@@ -215,11 +233,10 @@ class InJavaScriptLocalObj(val context: Context) {
     fun finish() {
         Log.i(TAG, "finish")
         GlobalScope.launch(Dispatchers.Main) {
-            delay(5000)
+            // 目标网页跳转成功
             (context as MainActivity).handler.sendEmptyMessage(0)
         }
     }
-
 }
 
 fun appendFile(text: String, destFile: String) {
@@ -229,3 +246,4 @@ fun appendFile(text: String, destFile: String) {
     }
     f.appendText(text, Charset.defaultCharset())
 }
+

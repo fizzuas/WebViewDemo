@@ -1,6 +1,20 @@
 console.clear();
 var targetEleA = null;
-var targetSite = "baike.baidu.com";
+var targetSite = "www.wjjz.net";
+/*生成从minNum到maxNum的随机数*/
+function randomNum(minNum,maxNum){
+    switch(arguments.length){
+        case 1:
+            return parseInt(Math.random()*minNum+1,10);
+        break;
+        case 2:
+            return parseInt(Math.random()*(maxNum-minNum+1)+minNum,10);
+        break;
+            default:
+                return 0;
+            break;
+    }
+}
 function scrollTo(target) {
   return function () {
     target.scrollIntoView({
@@ -19,7 +33,7 @@ function clickToTarget() {
      targetEleA.scrollIntoView({
       behavior: "smooth"
     });
-    setTimeout(clickHref(targetEleA), 1500);
+    setTimeout(clickHref(targetEleA), randomNum(300,1250));
   };
 }
 
@@ -88,14 +102,14 @@ if (pageNo.length == 0) {
     }
   }
   /* 模拟滑动，然后跳转到第二页 */
-  var time = 1500;
+  var time = randomNum(300,1250);
   for (i = 0; i < scTitles.length; i++) {
     setTimeout(scrollTo(scTitles[i]), time);
-    time = time + 1500;
+    time = time + randomNum(300,1250);
   }
   for (i = 0; i < resultTitles.length; i++) {
     setTimeout(scrollTo(scTitles[i]), time);
-    time = time + 1500;
+    time = time + randomNum(300,1250);
   }
   if (targetEleA == null) {
     /* 滑到nextonly 点击 */
@@ -104,16 +118,17 @@ if (pageNo.length == 0) {
       /*  跳转到下一页前logBack会更新 */
       window.java_obj.saveLog(logBack);
       setTimeout(scrollTo(nextOnlys[0]), time);
-      time += 1500;
+      time += randomNum(300,1250);
       setTimeout(clickHref(nextOnlys[0]), time);
     } else {
+      /*有可能是百度后第一页找不到问题，更有可能，非下一页作用了这个js*/
       logBack += "not found 下一页节点";
       console.log("not found 下一页节点");
       window.java_obj.saveLog(logBack);
-      window.java_obj.requestFinished();
+      /*window.java_obj.requestFinished();*/
     }
   } else {
-    time += 1500;
+    time += randomNum(300,1250);
     setTimeout(clickToTarget(), time);
   }
 } else {
@@ -151,10 +166,10 @@ if (pageNo.length == 0) {
   }
 
   /* 模拟滑动，然后跳转到3..N页 */
-  var time = 1500;
+  var time = randomNum(300,1250);
   for (i = 0; i < rssultTitles.length; i++) {
     setTimeout(scrollTo(rssultTitles[i]), time);
-    time = time + 1500;
+    time = time + randomNum(300,1250);
   }
 
   if (targetEleA == null) {
@@ -164,13 +179,13 @@ if (pageNo.length == 0) {
       setTimeout(scrollTo(nextOnlys[0]), time);
       if (pageNo[0].innerText == "第40页") {
         /* 当前页="第40页" 就不跳转了 */
-        console.log("跳入设置页");
+        console.log("已经第40页");
         window.java_obj.saveLog(logBack);
         window.java_obj.requestFinished();
       } else {
         /* 跳转 */
         window.java_obj.saveLog(logBack);
-        time += 1500;
+        time += randomNum(300,1250);
         setTimeout(clickHref(nextOnlys[0]), time);
       }
     } else {
@@ -181,7 +196,7 @@ if (pageNo.length == 0) {
       window.java_obj.requestFinished();
     }
   } else {
-    time += 1500;
+    time += randomNum(300,1250);
     setTimeout(clickToTarget(), time);
   }
 }
