@@ -1,4 +1,4 @@
-document.getElementsByName('word')[0].value='家政';
+document.getElementsByName('word')[0].value=keyword;
 var nodes=document.getElementsByTagName('form');
 var lastNode=nodes[0].lastChild;
 function time(){lastNode.click()}

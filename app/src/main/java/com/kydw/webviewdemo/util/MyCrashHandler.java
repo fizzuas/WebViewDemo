@@ -1,4 +1,4 @@
-package com.kydw.webviewdemo;
+package com.kydw.webviewdemo.util;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Looper;
-import android.os.Process;
 import android.util.Log;
 import android.widget.Toast;
 

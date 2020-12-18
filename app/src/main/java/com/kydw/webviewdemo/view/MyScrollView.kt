@@ -1,4 +1,4 @@
-package com.kydw.webviewdemo
+package com.kydw.webviewdemo.view
 
 import android.content.Context
 import android.util.AttributeSet

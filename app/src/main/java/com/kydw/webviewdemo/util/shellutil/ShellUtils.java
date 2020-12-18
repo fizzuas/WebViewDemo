@@ -1,6 +1,4 @@
-package com.kydw.webviewdemo.shellutil;
-
-import androidx.annotation.NonNull;
+package com.kydw.webviewdemo.util.shellutil;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -158,10 +156,10 @@ public class ShellUtils {
                 errorResult = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 String s;
                 while ((s = successResult.readLine()) != null) {
-                    successMsg.append(s+"\n");
+                    successMsg.append(s + "\n");
                 }
                 while ((s = errorResult.readLine()) != null) {
-                    errorMsg.append(s+"\n");
+                    errorMsg.append(s + "\n");
                 }
             }
         } catch (IOException e) {
@@ -273,7 +271,7 @@ public class ShellUtils {
 
     public static CommandResult execClick2(int x, int y) {
         //(303,353)
-        String cmd1 ="sendevent /dev/input/event5 0001 330 00000001";// BTN touch事件 值为1
+        String cmd1 = "sendevent /dev/input/event5 0001 330 00000001";// BTN touch事件 值为1
 
 
         String cmd2 = "sendevent /dev/input/event5 0003 0053 " + y;
@@ -288,7 +286,7 @@ public class ShellUtils {
         String cmd8 = "sendevent /dev/input/event5 0001 0330 00000000";// BTN touch事件 值为0
 
         String cmd9 = "sendevent /dev/input/event5 0003 0053 00000000";
-        String cmd10 ="sendevent /dev/input/event5 0003 0054 00000900";
+        String cmd10 = "sendevent /dev/input/event5 0003 0054 00000900";
 
         String cmd11 = "sendevent /dev/input/event5 0000 0002 00000000";
         String cmd12 = "sendevent /dev/input/event5 0000 0000 00000000";   //同步

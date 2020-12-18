@@ -1,4 +1,4 @@
-package com.kydw.webviewdemo.shellutil
+package com.kydw.webviewdemo.util.shellutil
 
 /**
  *@Author oyx

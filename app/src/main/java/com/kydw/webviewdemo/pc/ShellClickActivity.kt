@@ -1,8 +1,7 @@
-package com.kydw.webviewdemo
+package com.kydw.webviewdemo.pc
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -10,8 +9,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
-import com.kydw.webviewdemo.shellutil.ShellUtils
-import kotlinx.android.synthetic.main.activity_c_m_d.*
+import com.kydw.webviewdemo.R
+import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import kotlinx.android.synthetic.main.activity_shell_click.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
