@@ -205,7 +205,7 @@ class WebActivity : AppCompatActivity() {
                 val siteInfo = mKeyWords[mRequestIndex].second
 
                 if (url.equals(baiduIndexUrl)) {
-                    Log.e(TAG, "百度一下->页面" +)
+                    Log.e(TAG, "百度一下->页面=" +url)
                     //首页，提交表单
                     val jsForm =
                         application.assets.open("js_bd_2second.js").bufferedReader().use {
