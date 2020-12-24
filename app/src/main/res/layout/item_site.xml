@@ -7,7 +7,8 @@
     android:layout_marginEnd="10dp">
 
     <EditText
-        android:id="@+id/et_sites"
+        android:focusableInTouchMode="false"
+        android:id="@+id/et_site"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -23,10 +24,10 @@
         android:layout_height="wrap_content"
         android:padding="8dp"
         android:src="@drawable/ic_baseline_add_box_24"
-        app:layout_constraintBottom_toBottomOf="@id/et_sites"
+        app:layout_constraintBottom_toBottomOf="@id/et_site"
         app:layout_constraintEnd_toStartOf="@id/img_del"
-        app:layout_constraintStart_toEndOf="@id/et_sites"
-        app:layout_constraintTop_toTopOf="@id/et_sites" />
+        app:layout_constraintStart_toEndOf="@id/et_site"
+        app:layout_constraintTop_toTopOf="@id/et_site" />
 
     <ImageView
         android:id="@+id/img_del"
@@ -34,9 +35,9 @@
         android:layout_height="wrap_content"
         android:padding="8dp"
         android:src="@drawable/ic_baseline_delete_24"
-        app:layout_constraintBottom_toBottomOf="@id/et_sites"
+        app:layout_constraintBottom_toBottomOf="@id/et_site"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/img_add"
-        app:layout_constraintTop_toTopOf="@id/et_sites" />
+        app:layout_constraintTop_toTopOf="@id/et_site" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

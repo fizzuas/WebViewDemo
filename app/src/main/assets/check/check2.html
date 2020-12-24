@@ -245,31 +245,5 @@
 </div>
 </body>
 
-<script>
-    var s = 0;
-    var length = 0;
 
-    function time() {
-
-
-        var but = document.getElementById("vcode-slide-button250");
-        var cover = document.getElementById("vcode-slide-cover250");
-        // alert("" + but.style.left);
-        length+=5;
-        but.style.left = length;
-        cover.style.left =length;
-        if (length > 200) {
-            clearInterval(s);
-        }
-
-    }
-
-    function displayDate() {
-        var slide=document.getElementById("vcode-slide-bottom");
-        // alert("" + slide.style.width);
-
-        s = setInterval(time, 50);
-    }
-
-</script>
 </html>

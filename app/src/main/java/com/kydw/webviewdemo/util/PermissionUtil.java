@@ -9,11 +9,7 @@ import android.os.Build;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-/**
- * @Author oyx
- * @date 2020/12/10 16:00
- * @description
- */
+
 public class PermissionUtil {
     public static boolean hasRequiredPermissions(Context context) {
         {

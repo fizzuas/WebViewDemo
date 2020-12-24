@@ -14,15 +14,12 @@ import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import com.kydw.webviewdemo.CIRCLE_COUNT
-import com.kydw.webviewdemo.KEYWORD_SITES
 import com.kydw.webviewdemo.R
-import com.kydw.webviewdemo.adapter.Model
 import com.kydw.webviewdemo.dialog.JAlertDialog
 import com.kydw.webviewdemo.util.shellutil.CMD
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import com.kydw.webviewdemo.util.PermissionUtil
-import com.kydw.webviewdemo.util.ToastUtil
+import com.kydw.webviewdemo.util.appendFile
 import com.tencent.smtt.export.external.interfaces.SslError
 import com.tencent.smtt.export.external.interfaces.SslErrorHandler
 import com.tencent.smtt.sdk.*
@@ -36,13 +33,14 @@ import java.nio.charset.Charset
 const val TAG: String = "oyx"
 
 class BaiduMWebActivity : AppCompatActivity() {
+    val pageCheck =
+        "https://wappass.baidu.com/static/captcha/tuxing.html?&ak=248b24c134a6b4f52ee85f8b9577d4a8&backurl=https%3A%2F%2Fm.baidu.com%2Ffrom%3D844b%2Fs%3Fpn%3D10%26usm%3D3%26word%3D%25E9%2592%25A5%25E5%258C%2599%25E6%259C%25BA%26sa%3Dnp%26ms%3D1%26rqid%3D10964520929320459358%26params_ssrt%3Dsmarty&logid=9950648836190522585&signature=819bd5a304bb5a74607e492e26f461b5&timestamp=1608519201"
     lateinit var webview: WebView
-    val isRoot=false
+    val isRoot = false
     var mCircleCount = 1
     var mCircleIndex = 1
 
     private var mLoadingDbDialog: JAlertDialog? = null
-
     private val obj = MInJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://www.baidu.com/"
 
@@ -89,26 +87,7 @@ class BaiduMWebActivity : AppCompatActivity() {
     }
 
     fun request() {
-        if (mRequestIndex < mKeyWords.size) {
-            //单次循环一个请求结束
-            webview.loadUrl(baiduIndexUrl)
-        } else {
-            //一个循环结束
-            if (mCircleCount == 0) {
-                //无限循环
-                nextCircle()
-            } else {
-                if (mCircleIndex == mCircleCount) {
-                    //第mCircleIndex次循环结束
-                    ToastUtil.show(this, "循环结束")
-                    finish()
-                } else {
-                    //开启下一次循环
-                    nextCircle()
-                }
-                mCircleIndex++
-            }
-        }
+        webview.loadUrl(pageCheck)
     }
 
     private fun nextCircle() {
@@ -142,7 +121,8 @@ class BaiduMWebActivity : AppCompatActivity() {
             if (result1 != null && result1.successMsg != null) {
                 Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
                 appendFile(result1.successMsg + "\n\n",
-                    getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt")
+                    getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
+                    this@BaiduMWebActivity)
             }
             withContext(Dispatchers.Main) {
                 mLoadingDbDialog?.dismiss()
@@ -154,10 +134,8 @@ class BaiduMWebActivity : AppCompatActivity() {
     }
 
     private fun saveIP(sucMsg0: String) {
-
         appendFile(sucMsg0,
-            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt")
-
+            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt", this)
     }
 
     override fun onDestroy() {
@@ -170,20 +148,6 @@ class BaiduMWebActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
-        mCircleCount = intent.getIntExtra(CIRCLE_COUNT, 0)
-
-        list?.forEach {
-            Log.i(MyTag, it.toString())
-            val model = it as Model
-            mKeyWords.add(Pair(model.keyword!!, model.sites!!))
-        }
-//        if (mKeyWords.size == 0) {
-//            mKeyWords.add(Pair("钥匙机", "www.kydz-wx.com"))
-//            mCircleCount == 1
-//        }
-
 
         PermissionUtil.askForRequiredPermissions(this)
 
@@ -209,48 +173,32 @@ class BaiduMWebActivity : AppCompatActivity() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 Log.i(TAG, "onPageStarted = $url")
-
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 Log.i(TAG, "onPageFinished = $url")
-                val keyWord = mKeyWords[mRequestIndex].first
-                val siteInfo = mKeyWords[mRequestIndex].second
-
-                if (url.equals(baiduIndexUrl)) {
-                    Log.e(TAG, "百度一下->页面")
-                    //首页，提交表单
-                    val jsForm =
-                        application.assets.open("js_bd_2second.js").bufferedReader().use {
-                            it.readText()
-                        }
-                    Log.i(MyTag, "keyword$keyWord")
-                    Log.i(MyTag, "siteInfo$siteInfo")
-                    val head = "var keyword=\"$keyWord\";"
-                    view!!.loadUrl("javascript:$head$jsForm")
-                } else if (url!!.contains(siteInfo)) {
-                    Log.e(TAG, "目标页加载成功=$url")
-                    val jsLook = application.assets.open("js_look.js").bufferedReader().use {
-                        it.readText()
+                if (url!!.contains("baidu.com")) {
+                    Log.e(TAG, "百度搜索页面=$url")
+                    if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
+                        //验证码
+                        Log.e(MyTag, "发现验证码界面" + url)
+                        val jsSwipe =
+                            application.assets.open("js_swipe_vc_by_cb.js").bufferedReader().use {
+                                it.readText()
+                            }
+                        view!!.loadUrl("javascript:$jsSwipe")
+                    } else {
+                        Log.e(MyTag, "发现下一页" + url)
                     }
-                    view!!.loadUrl("javascript:$jsLook")
-                } else if (url.contains("baidu.com")) {
-                    Log.e(TAG, "下一页=$url")
-                    //Next 页
-                    val jsToNext =
-                        application.assets.open("js_to_next.js").bufferedReader().use {
-                            it.readText()
-                        }
-                    val head = "var targetSite = \"$siteInfo\";"
-                    view!!.loadUrl("javascript:$head$jsToNext")
                 }
+
                 super.onPageFinished(view, url)
             }
 
             override fun onReceivedSslError(
                 view: WebView?,
                 handler: SslErrorHandler?,
-                error: SslError?,
+                error: SslError?
             ) {
                 // let's ignore ssl error
                 handler!!.proceed()
@@ -304,33 +252,33 @@ class BaiduMWebActivity : AppCompatActivity() {
         webSettings.javaScriptEnabled = true
 
         webSettings.userAgentString =
-                //   "User-Agent:Android"
+            "User-Agent:Android"
 
-                //手机 QQ浏览器  百度手机浏览器首页
+        //手机 QQ浏览器  百度手机浏览器首页
 //        "Mozilla/5.0 (Linux; U; Android 10; zh-cn; ELS-AN00 Build/HUAWEIELS-AN00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/11.0 Mobile Safari/537.36 COVC/045429"
 
-                //手机 Firefox  "User-Agent:Android"首页
+        //手机 Firefox  "User-Agent:Android"首页
 //            "Mozilla/5.0 (Android 4.2; rv:19.0) Gecko/20121129 Firefox/19.0"
 
-                //PC  Win7 Firefox  缩小版，跟百度浏览器头部相同
+        //PC  Win7 Firefox  缩小版，跟百度浏览器头部相同
 //            "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:61.0) Gecko/20100101 Firefox/61.0"
 //
-                //Android	Samsung三星手机	搜狗手机浏览器
+        //Android	Samsung三星手机	搜狗手机浏览器
 //            "Mozilla/5.0 (Linux; U; Android 4.4.4; zh-cn; SM-G7508Q Build/KTU84P) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 SogouMSE,SogouMobileBrowser/5.0.3"
 
-                //Android	索尼爱立信MT15i	UC 浏览器
+        //Android	索尼爱立信MT15i	UC 浏览器
 //            "Mozilla/5.0 (Linux; U; Android 2.3.4; zh-cn; MT15i Build/4.0.2.A.0.62) UC AppleWebKit/530+ (KHTML, like Gecko) Mobile Safari/530"
-                //Android	魅族MX3	Webkit
+        //Android	魅族MX3	Webkit
 //            "Mozilla/5.0 (Linux; U; Android 4.4.4; zh-cn; M351 Build/KTU84P) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"
-                //特殊	360spider		360安全UA
-                //"360spider(http://webscan.360.cn)"
-                //PC	Windows	Win10	Google浏览器 Chrome
+        //特殊	360spider		360安全UA
+        //"360spider(http://webscan.360.cn)"
+        //PC	Windows	Win10	Google浏览器 Chrome
 //        "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
-                //PC	Windows	Win10	360浏览器(无痕)
+        //PC	Windows	Win10	360浏览器(无痕)
 //            "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36 QIHU 360SE"
-                //手机	Android	华为Mate 8	手机百度
+        //手机	Android	华为Mate 8	手机百度
 //        "Mozilla/5.0 (Linux; Android 7.0; HUAWEI NXT-AL10 Build/HUAWEINXT-AL10) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/35.0.1916.138 Mobile Safari/537.36 T7/7.4 baiduboxapp/8.2.5 (Baidu; P1 7.0)"
-            "Mozilla/5.0 (Linux; U; Android 6.0.1; zh-cn; Redmi 4 Build/MMB29M) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/61.0.3163.128 Mobile Safari/537.36 XiaoMi/MiuiBrowser/10.8.1"
+//            "Mozilla/5.0 (Linux; U; Android 6.0.1; zh-cn; Redmi 4 Build/MMB29M) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/61.0.3163.128 Mobile Safari/537.36 XiaoMi/MiuiBrowser/10.8.1"
     }
 
     override fun onBackPressed() {
@@ -388,7 +336,8 @@ private class MInJavaScriptLocalObj(val context: Context) {
         if (PermissionUtil.hasRequiredPermissions(context))
             appendFile(
                 content,
-                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt"
+                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt",
+                context
             )
     }
 
@@ -409,13 +358,22 @@ private class MInJavaScriptLocalObj(val context: Context) {
             (context as BaiduMWebActivity).handler.sendEmptyMessage(1)
         }
     }
+
+
+    @JavascriptInterface
+    fun swipe() {
+        Log.i(TAG, "swipe")
+        val x0 = 240
+        val y0 = 1230
+        val x1 = 870
+        val y1 = 1230
+        Log.i(MyTag, "$x0,$y0;$x1,$y1")
+        GlobalScope.launch {
+            val result = ShellUtils.execSwipe(x0, y0, x1, y1, 500)
+            Log.i(MyTag, result.toString())
+        }
+    }
 }
 
-fun appendFile(text: String, destFile: String) {
-    val f = File(destFile)
-    if (!f.exists()) {
-        f.createNewFile()
-    }
-    f.appendText(text, Charset.defaultCharset())
-}
+
 

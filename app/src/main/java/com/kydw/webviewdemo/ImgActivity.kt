@@ -11,11 +11,7 @@ import com.tencent.smtt.sdk.WebView
 import kotlinx.android.synthetic.main.activity_img.*
 import kotlinx.android.synthetic.main.activity_main.*
 
-/**
- *@Author oyx
- *@date 2020/7/1 11:36
- *@description
- */
+
 class ImgActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

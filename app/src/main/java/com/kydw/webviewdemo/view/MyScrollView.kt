@@ -6,11 +6,6 @@ import android.util.Log
 import android.view.MotionEvent
 import androidx.core.widget.NestedScrollView
 
-/**
- * @Author oyx
- * @date 2020/7/1 13:53
- * @description
- */
  class MyScrollView : NestedScrollView {
     private var mLastX = 0
     private var mLastY = 0

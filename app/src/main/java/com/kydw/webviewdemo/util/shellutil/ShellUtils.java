@@ -298,4 +298,10 @@ public class ShellUtils {
     }
 
 
+    public static CommandResult
+    execSwipe(int x0, int y0, int x1, int y1, int ms) {
+        String cmd = "input touchscreen swipe " + x0 + " " + y0 + " " + x1 + " " + y1 + " " + ms;
+        return execCommand(cmd, true, false);
+    }
+
 }

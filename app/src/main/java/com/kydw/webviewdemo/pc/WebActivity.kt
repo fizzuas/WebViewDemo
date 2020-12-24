@@ -19,10 +19,12 @@ import com.kydw.webviewdemo.KEYWORD_SITES
 import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.adapter.Model
 import com.kydw.webviewdemo.dialog.JAlertDialog
+import com.kydw.webviewdemo.util.NetState
 import com.kydw.webviewdemo.util.shellutil.CMD
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import com.kydw.webviewdemo.util.PermissionUtil
 import com.kydw.webviewdemo.util.ToastUtil
+import com.kydw.webviewdemo.util.appendFile
 import com.tencent.smtt.export.external.interfaces.SslError
 import com.tencent.smtt.export.external.interfaces.SslErrorHandler
 import com.tencent.smtt.sdk.*
@@ -30,10 +32,10 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import java.io.File
 import java.lang.ref.WeakReference
-import java.nio.charset.Charset
 
 
 class WebActivity : AppCompatActivity() {
+
     lateinit var webview: WebView
     var mCircleCount = 1
     var mCircleIndex = 1
@@ -114,12 +116,12 @@ class WebActivity : AppCompatActivity() {
         }
         mLoadingDbDialog?.show()
 
-
+        // switchIP
         GlobalScope.launch(Dispatchers.IO) {
             val result0 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-            if (result0 != null && result0.successMsg != null) {
+            if (result0?.successMsg != null) {
                 val sucMsg0 = result0.successMsg!!
-                Log.i(MyTag, "result0.sucMsg0=" + sucMsg0?.toString() + ", ")
+                Log.i(MyTag, "result0.sucMsg0=$sucMsg0, ")
                 saveIP(sucMsg0)
 
             }
@@ -129,13 +131,25 @@ class WebActivity : AppCompatActivity() {
             ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
 
             //关掉飞行时，4G 需要慢慢打开
-            delay(14000)
-            val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-            if (result1 != null && result1.successMsg != null) {
-                Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
-                appendFile(result1.successMsg + "\n\n",
-                    getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt")
+            delay(5000)
+
+            for (i in 1..10) {
+                if (!NetState.hasNetWorkConnection(this@WebActivity)) {
+                    Log.i(MyTag, "网络未建立，再等五秒")
+                    delay(5000)
+                } else {
+                    val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+                    if (result1?.successMsg != null) {
+                        Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
+                        appendFile(result1.successMsg + "\n\n",
+                            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
+                            this@WebActivity)
+                    }
+                    Log.e(MyTag, "等待 $i 次")
+                    break
+                }
             }
+
             withContext(Dispatchers.Main) {
                 mLoadingDbDialog?.dismiss()
                 mRequestIndex = 0
@@ -146,9 +160,8 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun saveIP(sucMsg0: String) {
-
         appendFile(sucMsg0,
-            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt")
+            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt", this)
 
     }
 
@@ -156,7 +169,6 @@ class WebActivity : AppCompatActivity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         destroyWebView()
         super.onDestroy()
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -171,9 +183,6 @@ class WebActivity : AppCompatActivity() {
             val model = it as Model
             mKeyWords.add(Pair(model.keyword!!, model.sites!!))
         }
-
-        PermissionUtil.askForRequiredPermissions(this)
-
         webview = WebView(applicationContext)
         val lp = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         webview.layoutParams = lp
@@ -200,12 +209,18 @@ class WebActivity : AppCompatActivity() {
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                Log.i(TAG, "onPageFinished = $url")
+                Log.i(TAG, "onPageFinished url= $url")
+                Log.i(TAG, "onPageFinished title= " + view?.title)
+//
+//                view!!.loadUrl(
+//                    "javascript:window.java_obj.showSource("
+//                            + "document.getElementsByTagName('html')[0].innerHTML);"
+//                )
                 val keyWord = mKeyWords[mRequestIndex].first
                 val siteInfo = mKeyWords[mRequestIndex].second
 
                 if (url.equals(baiduIndexUrl)) {
-                    Log.e(TAG, "百度一下->页面=" +url)
+                    Log.e(TAG, "百度一下->页面=" + url)
                     //首页，提交表单
                     val jsForm =
                         application.assets.open("js_bd_2second.js").bufferedReader().use {
@@ -226,19 +241,21 @@ class WebActivity : AppCompatActivity() {
                     if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
                         //验证码
                         Log.e(MyTag, "发现验证码界面" + url)
-                        
-
-
-
+                        val jsSwipe =
+                            application.assets.open("js_swipe_vc_by_cb.js").bufferedReader().use {
+                                it.readText()
+                            }
+                        view!!.loadUrl("javascript:$jsSwipe")
+                    } else {
+                        Log.e(MyTag, "发现下一页" + url)
+                        //Next 页
+                        val jsToNext =
+                            application.assets.open("js_to_next.js").bufferedReader().use {
+                                it.readText()
+                            }
+                        val head = "var targetSite = \"$siteInfo\";"
+                        view!!.loadUrl("javascript:$head$jsToNext")
                     }
-                    Log.e(MyTag, "发现下一页" + url)
-                    //Next 页
-                    val jsToNext =
-                        application.assets.open("js_to_next.js").bufferedReader().use {
-                            it.readText()
-                        }
-                    val head = "var targetSite = \"$siteInfo\";"
-                    view!!.loadUrl("javascript:$head$jsToNext")
                 }
                 super.onPageFinished(view, url)
             }
@@ -246,7 +263,7 @@ class WebActivity : AppCompatActivity() {
             override fun onReceivedSslError(
                 view: WebView?,
                 handler: SslErrorHandler?,
-                error: SslError?,
+                error: SslError?
             ) {
                 // let's ignore ssl error
                 handler!!.proceed()
@@ -356,7 +373,8 @@ private class InJavaScriptLocalObj(val context: Context) {
         if (PermissionUtil.hasRequiredPermissions(context))
             appendFile(
                 content,
-                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt"
+                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt",
+                context
             )
     }
 
@@ -377,6 +395,21 @@ private class InJavaScriptLocalObj(val context: Context) {
             (context as WebActivity).handler.sendEmptyMessage(1)
         }
     }
+
+    @JavascriptInterface
+    fun swipe() {
+        Log.i(TAG, "swipe")
+        val x0 = 240
+        val y0 = 1230
+        val x1 = 870
+        val y1 = 1230
+        Log.i(MyTag, "$x0,$y0;$x1,$y1")
+        GlobalScope.launch {
+            val result = ShellUtils.execSwipe(x0, y0, x1, y1, 500)
+            Log.i(MyTag, result.toString())
+        }
+    }
+
 }
 
 

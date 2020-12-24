@@ -1,10 +1,6 @@
 package com.kydw.webviewdemo
 
-/**
- *@Author oyx
- *@date 2020/12/14 15:11
- *@description
- */
+
 
 //intent
 const val KEYWORD_SITES = "KEYWORD_SITES"

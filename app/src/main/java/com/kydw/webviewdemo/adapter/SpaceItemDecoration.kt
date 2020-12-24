@@ -8,11 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ItemDecoration
 
 
-/**
- *@Author oyx
- *@date 2020/12/14 20:17
- *@description
- */
+
 class SpaceItemDecoration(leftRight: Int, topBottom: Int) : ItemDecoration() {
     private val leftRight: Int
     private val topBottom: Int

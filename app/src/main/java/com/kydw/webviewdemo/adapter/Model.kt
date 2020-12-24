@@ -3,14 +3,10 @@ package com.kydw.webviewdemo.adapter
 import android.os.Parcel
 import android.os.Parcelable
 
-/**
- *@Author oyx
- *@date 2020/12/12 17:03
- *@description
- */
+
 data class Model(
     var keyword: String?,
-    var sites: String?,
+    var sites: String?
 
     ) : Parcelable {
     constructor(parcel: Parcel) : this(

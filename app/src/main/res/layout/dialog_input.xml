@@ -29,7 +29,8 @@
         app:layout_constraintTop_toBottomOf="@+id/textView" />
 
     <EditText
-        android:id="@+id/et_kw"
+        android:focusableInTouchMode="false"
+        android:id="@+id/et_kw_input"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="25dp"

@@ -10,7 +10,10 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import com.kydw.webviewdemo.R
+import com.kydw.webviewdemo.util.getScreenRealHeight
+import com.kydw.webviewdemo.util.getScreenRealWidth
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
+import com.kydw.webviewdemo.util.statueHeight
 import kotlinx.android.synthetic.main.activity_shell_click.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -44,8 +47,6 @@ class ShellClickActivity : AppCompatActivity() {
                 Toast.LENGTH_SHORT).show()
             Log.e(MyTag, "button_click")
         })
-
-
 
 
         button.setOnTouchListener(View.OnTouchListener { view, motionEvent ->
@@ -112,38 +113,21 @@ class ShellClickActivity : AppCompatActivity() {
         })
 
         button3.setOnClickListener {
-            val wm = this
-                .getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            Log.i(MyTag, "screen.width=" + wm.defaultDisplay.width.toString())
-            Log.i(MyTag, "screen.heitht=" + wm.defaultDisplay.height.toString())
+            Log.i(MyTag, "height=" + getScreenRealHeight(this).toString())
+            Log.i(MyTag, "width=" + getScreenRealWidth(this).toString())
+            Log.i(MyTag, "statue=" + statueHeight(application))
 
-            var height = 0
-            val resourceId =
-                applicationContext.resources.getIdentifier("status_bar_height", "dimen", "android")
-            if (resourceId > 0) {
-                height = applicationContext.resources.getDimensionPixelSize(resourceId)
-            }
 
-            Log.i(MyTag, "状态栏高度=" + height)
-
-            val location = IntArray(2)
-            button.getLocationOnScreen(location)
-
-            val x = location[0] + button.width / 2
-            val y = location[1] + button.height / 2
-
-//            Log.i(MyTag, "location=" + location[0] + "," + location[1])
-//            Log.i(MyTag, "w=" + button.width)
-//            Log.i(MyTag, "h=" + button.height)
-
-            Log.i(MyTag, "x=" + x)
-            Log.i(MyTag, "y=" + y)
-
-            GlobalScope.launch(Dispatchers.IO) {
-                delay(1000)
-                val result = ShellUtils.execClick2(x, y)
-                Log.i(MyTag, result.toString())
-            }
+//            val x0 = (button.left + button.right) / 2
+//            val y0 = (button.top + button.bottom) / 2 + statueHeight(application)
+//            val x1 = x0 + 100
+//            val y1 = y0 + 100
+//            Log.i(MyTag, "$x0,$y0;$x1,$y1")
+//            GlobalScope.launch {
+//                delay(500)
+//                val result = ShellUtils.execSwipe(x0, y0, x1, y1, 500)
+//                Log.i(MyTag, result.toString())
+//            }
         }
     }
 }

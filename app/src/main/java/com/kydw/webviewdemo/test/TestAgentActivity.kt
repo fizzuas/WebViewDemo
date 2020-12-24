@@ -1,4 +1,4 @@
-package com.kydw.webviewdemo.phone
+package com.kydw.webviewdemo.test
 
 import android.os.Bundle
 import android.util.Log
@@ -7,7 +7,7 @@ import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.pc.MyTag
 import com.tencent.smtt.sdk.WebView
 
-class TestActivity : AppCompatActivity() {
+class TestAgentActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_test)

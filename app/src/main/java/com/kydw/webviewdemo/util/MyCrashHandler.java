@@ -21,12 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-/**
- *@Author oyx
- *@date 2020/6/30 16:03
- *@description
- */
-
 class MyCrashHandler implements Thread.UncaughtExceptionHandler {
 
     private static MyCrashHandler crashHandler;

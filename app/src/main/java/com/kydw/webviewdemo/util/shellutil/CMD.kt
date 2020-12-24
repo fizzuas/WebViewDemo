@@ -1,10 +1,5 @@
 package com.kydw.webviewdemo.util.shellutil
 
-/**
- *@Author oyx
- *@date 2020/12/11 15:35
- *@description
- */
 
 class CMD {
     companion object {
