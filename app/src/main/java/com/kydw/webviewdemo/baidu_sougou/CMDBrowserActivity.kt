@@ -1,20 +1,17 @@
-package com.kydw.webviewdemo.pc
+package com.kydw.webviewdemo.baidu_sougou
 
 import android.annotation.SuppressLint
 import android.content.*
 import android.graphics.Canvas
-import android.net.Uri
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
-import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView.ViewHolder
-import com.chad.library.adapter.base.listener.OnItemClickListener
+import androidx.recyclerview.widget.RecyclerView
 import com.chad.library.adapter.base.listener.OnItemSwipeListener
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
 import com.kydw.webviewdemo.CIRCLE_COUNT
@@ -23,19 +20,17 @@ import com.kydw.webviewdemo.KEYWORD_SITES
 import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.adapter.Model
 import com.kydw.webviewdemo.adapter.ModelAdapter
+import com.kydw.webviewdemo.baidu_simplify.MyTag
 import com.kydw.webviewdemo.dialog.DialogInput
 import com.kydw.webviewdemo.dialog.JAlertDialog
 import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
-import kotlinx.android.synthetic.main.activity_c_m_d.*
+import kotlinx.android.synthetic.main.activity_c_m_d_browser.*
 
+class CMDBrowserActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
+    var models = mutableListOf<Model>(Model("关键词", "网址"), Model("钥匙机", "www.kydz-wx.com"))
 
-const val MyTag: String = "oyx"
-
-class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
-//    var models = mutableListOf<Model>(Model("关键词", "网址"), Model("钥匙机", "www.kydz-wx.com"))
-
-        var models = mutableListOf<Model>(Model("关键词", "网址"))
+    //        var models = mutableListOf<Model>(Model("关键词", "网址"))
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
 
     private val mDialogInput: DialogInput = DialogInput()
@@ -54,13 +49,13 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_c_m_d)
+        setContentView(R.layout.activity_c_m_d_browser)
 
         PermissionUtil.askForRequiredPermissions(this)
 
         registerReceiver(receiver, intentFilter)
         but_tonext.setOnClickListener {
-            val intent = Intent(this, WebActivity::class.java)
+            val intent = Intent(this, WebBrowserActivity::class.java)
             models.subList(1, models.size).forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
             }
@@ -106,10 +101,8 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
             if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
                 startActivity(intent)
             } else {
-                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
+                ToastUtil.show(this, "请关闭wifi,打开4G,并能上网")
             }
-
-
         }
 
         but_addkw.setOnClickListener {
@@ -131,28 +124,28 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
 
     // 侧滑监听
     var onItemSwipeListener: OnItemSwipeListener = object : OnItemSwipeListener {
-        override fun onItemSwipeStart(viewHolder: ViewHolder, pos: Int) {
-            Log.d(TAG, "view swiped start: $pos")
+        override fun onItemSwipeStart(viewHolder: RecyclerView.ViewHolder, pos: Int) {
+            Log.d(MyTag, "view swiped start: $pos")
             val holder = viewHolder as BaseViewHolder
         }
 
-        override fun clearView(viewHolder: ViewHolder, pos: Int) {
-            Log.d(TAG, "View reset: $pos")
+        override fun clearView(viewHolder: RecyclerView.ViewHolder, pos: Int) {
+            Log.d(MyTag, "View reset: $pos")
             val holder = viewHolder as BaseViewHolder
         }
 
-        override fun onItemSwiped(viewHolder: ViewHolder, pos: Int) {
-            Log.d(TAG, "View Swiped: $pos")
+        override fun onItemSwiped(viewHolder: RecyclerView.ViewHolder, pos: Int) {
+            Log.d(MyTag, "View Swiped: $pos")
         }
 
         override fun onItemSwipeMoving(
             canvas: Canvas,
-            viewHolder: ViewHolder,
+            viewHolder: RecyclerView.ViewHolder,
             dX: Float,
             dY: Float,
             isCurrentlyActive: Boolean
         ) {
-            canvas.drawColor(ContextCompat.getColor(this@CMDActivity,
+            canvas.drawColor(ContextCompat.getColor(this@CMDBrowserActivity,
                 R.color.color_light_blue))
         }
     }
@@ -176,5 +169,3 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
         modelAdapter.notifyDataSetChanged()
     }
 }
-
-

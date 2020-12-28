@@ -1,30 +1,29 @@
-package com.kydw.webviewdemo.pc
+package com.kydw.webviewdemo.baidu_sougou
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-
 import android.os.*
+import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
 import android.view.MotionEvent
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
 import com.kydw.webviewdemo.CIRCLE_COUNT
 import com.kydw.webviewdemo.KEYWORD_SITES
 import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.adapter.Model
+import com.kydw.webviewdemo.baidu_simplify.MyTag
+import com.kydw.webviewdemo.baidu_simplify.TAG
+import com.kydw.webviewdemo.baidu_simplify.WebActivity
 import com.kydw.webviewdemo.dialog.JAlertDialog
-import com.kydw.webviewdemo.util.NetState
+import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.CMD
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
-import com.kydw.webviewdemo.util.PermissionUtil
-import com.kydw.webviewdemo.util.ToastUtil
-import com.kydw.webviewdemo.util.appendFile
 import com.tencent.smtt.export.external.interfaces.SslError
 import com.tencent.smtt.export.external.interfaces.SslErrorHandler
 import com.tencent.smtt.sdk.*
@@ -33,8 +32,7 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.lang.ref.WeakReference
 
-
-class WebActivity : AppCompatActivity() {
+class WebBrowserActivity : AppCompatActivity() {
 
     lateinit var webview: WebView
     var mCircleCount = 1
@@ -46,7 +44,6 @@ class WebActivity : AppCompatActivity() {
     private val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://www.baidu.com/"
 
-    //    m.51baomu.cn
 
     val mKeyWords =
         mutableListOf<Pair<String, String>>()
@@ -58,8 +55,8 @@ class WebActivity : AppCompatActivity() {
 
     val handler = MyHandler(this)
 
-    class MyHandler(activity: WebActivity) : Handler() {
-        private val mActivity: WeakReference<WebActivity> = WeakReference(activity)
+    class MyHandler(activity: WebBrowserActivity) : Handler() {
+        private val mActivity: WeakReference<WebBrowserActivity> = WeakReference(activity)
 
         override fun handleMessage(msg: Message) {
             if (mActivity.get() == null) {
@@ -110,7 +107,7 @@ class WebActivity : AppCompatActivity() {
         //切换IP
         if (mLoadingDbDialog == null) {
             mLoadingDbDialog =
-                JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_data)
+                JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
                     .setWidth_Height_dp(300, 120).setCancelable(isRoot)
                     .create()
         }
@@ -127,29 +124,28 @@ class WebActivity : AppCompatActivity() {
             }
 
             ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
-            delay(1000)
+            delay(2000)
             ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
 
             //关掉飞行时，4G 需要慢慢打开
-            delay(5000)
+            delay(2000)
 
-            for (i in 1..10) {
-                if (!NetState.hasNetWorkConnection(this@WebActivity)) {
-                    Log.i(MyTag, "网络未建立，再等五秒")
-                    delay(5000)
-                } else {
+            for (i in 1..60) {
+                if (NetState.hasNetWorkConnection(this@WebBrowserActivity) && isOnline()) {
                     val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
                     if (result1?.successMsg != null) {
                         Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
                         appendFile(result1.successMsg + "\n\n",
                             getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
-                            this@WebActivity)
+                            this@WebBrowserActivity)
                     }
-                    Log.e(MyTag, "等待 $i 次")
                     break
+                } else {
+                    Log.i(MyTag, "网络未建立，再等2秒,$i")
+                    delay(2000)
                 }
             }
-
+            delay(2000)
             withContext(Dispatchers.Main) {
                 mLoadingDbDialog?.dismiss()
                 mRequestIndex = 0
@@ -184,43 +180,46 @@ class WebActivity : AppCompatActivity() {
             mKeyWords.add(Pair(model.keyword!!, model.sites!!))
         }
         webview = WebView(applicationContext)
-        val lp = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT)
         webview.layoutParams = lp
         content.addView(webview)
 
         webview.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
-                    return false
-                } else try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    view!!.context.startActivity(intent)
-                    return true
-                } catch (e: Exception) {
-                    Log.i(TAG, "shouldOverrideUrlLoading Exception:$e")
-                    return true
-                }
-            }
+//            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+//                if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
+//                    return false
+//                } else try {
+//                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+//                    view!!.context.startActivity(intent)
+//                    return true
+//                } catch (e: Exception) {
+//                    Log.i(com.kydw.webviewdemo.baidu_simplify.TAG,
+//                        "shouldOverrideUrlLoading Exception:$e")
+//                    return true
+//                }
+//            }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                Log.i(TAG, "onPageStarted = $url")
-
+                Log.i(com.kydw.webviewdemo.baidu_simplify.TAG, "onPageStarted = $url")
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                Log.i(TAG, "onPageFinished url= $url")
-                Log.i(TAG, "onPageFinished title= " + view?.title)
-//
-//                view!!.loadUrl(
-//                    "javascript:window.java_obj.showSource("
-//                            + "document.getElementsByTagName('html')[0].innerHTML);"
-//                )
+                Log.i(MyTag, "onPageFinished url= $url")
+                Log.i(MyTag, "onPageFinished title= " + view?.title)
+                view!!.loadUrl(
+                    "javascript:" + "var url=\"${url!!}\";" +
+                            "window.java_obj.showSource("
+                            + "document.getElementsByTagName('html')[0].innerHTML,url);"
+                )
                 val keyWord = mKeyWords[mRequestIndex].first
                 val siteInfo = mKeyWords[mRequestIndex].second
 
-                if (url.equals(baiduIndexUrl)) {
-                    Log.e(TAG, "百度一下->页面=" + url)
+                if (url == baiduIndexUrl) {
+                    //首页，提交表单
+                    Log.i(MyTag, "keyword$keyWord")
+                    Log.i(MyTag, "siteInfo$siteInfo")
                     //首页，提交表单
                     val jsForm =
                         application.assets.open("js_bd_2second.js").bufferedReader().use {
@@ -229,15 +228,21 @@ class WebActivity : AppCompatActivity() {
                     Log.i(MyTag, "keyword$keyWord")
                     Log.i(MyTag, "siteInfo$siteInfo")
                     val head = "var keyword=\"$keyWord\";"
-                    view!!.loadUrl("javascript:$head$jsForm")
-                } else if (url!!.contains(siteInfo)) {
-                    Log.e(TAG, "目标页加载成功=$url")
+                    view.loadUrl("javascript:$head$jsForm")
+                    GlobalScope.launch {
+                        delay(200)
+                        val result = ShellUtils.execTap(880, 585)
+                        Log.i(MyTag, "tap result==" + result.toString())
+                    }
+
+                } else if (url.contains(siteInfo)) {
+                    Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "目标页加载成功=$url")
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
                     }
-                    view!!.loadUrl("javascript:$jsLook")
+                    view.loadUrl("javascript:$jsLook")
                 } else if (url.contains("baidu.com")) {
-                    Log.e(TAG, "百度搜索页面=$url")
+                    Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "百度搜索页面=$url")
                     if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
                         //验证码
                         Log.e(MyTag, "发现验证码界面" + url)
@@ -245,7 +250,7 @@ class WebActivity : AppCompatActivity() {
                             application.assets.open("js_swipe_vc_by_cb.js").bufferedReader().use {
                                 it.readText()
                             }
-                        view!!.loadUrl("javascript:$jsSwipe")
+                        view.loadUrl("javascript:$jsSwipe")
                     } else {
                         Log.e(MyTag, "发现下一页" + url)
                         //Next 页
@@ -254,7 +259,7 @@ class WebActivity : AppCompatActivity() {
                                 it.readText()
                             }
                         val head = "var targetSite = \"$siteInfo\";"
-                        view!!.loadUrl("javascript:$head$jsToNext")
+                        view.loadUrl("javascript:$head$jsToNext")
                     }
                 }
                 super.onPageFinished(view, url)
@@ -314,7 +319,11 @@ class WebActivity : AppCompatActivity() {
 
         webSettings.javaScriptEnabled = true
 
-        webSettings.userAgentString = "User-Agent:Android"
+//        webSettings.userAgentString = "User-Agent:Android"
+
+        //Android	OPPO A11	手机百度
+        webSettings.userAgentString =
+            "Mozilla/5.0 (Linux; Android 10; PCHM10 Build/QKQ1.200209.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.89 Mobile Safari/537.36 T7/12.5 SP-engine/2.26.0 baiduboxapp/12.5.0.11 (Baidu; P1 10) NABar/1.0"
 
     }
 
@@ -359,21 +368,23 @@ class WebActivity : AppCompatActivity() {
 
 private class InJavaScriptLocalObj(val context: Context) {
     @JavascriptInterface
-    fun showSource(html: String) {
-        Log.i(TAG, "====>html_showSource=$html")
-        File(context.getExternalFilesDir(null)!!.absolutePath + File.separator + "show.html").writeText(
-            html
+    fun showSource(html: String, url: String) {
+        Log.i(MyTag, "showSource")
+        appendFile(
+            "\n" + "url=" + url + "\n" + html + "\n",
+            context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls_browser.txt",
+            context
         )
     }
 
     @JavascriptInterface
     fun saveLog(content: String) {
         Log.i(TAG,
-            "saveLog" + context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt")
+            "saveLog" + context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji_browser.txt")
         if (PermissionUtil.hasRequiredPermissions(context))
             appendFile(
                 content,
-                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt",
+                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji_browser.txt",
                 context
             )
     }
@@ -392,7 +403,7 @@ private class InJavaScriptLocalObj(val context: Context) {
         Log.i(TAG, "finish")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
-            (context as WebActivity).handler.sendEmptyMessage(1)
+            (context as WebBrowserActivity).handler.sendEmptyMessage(1)
         }
     }
 
@@ -411,5 +422,3 @@ private class InJavaScriptLocalObj(val context: Context) {
     }
 
 }
-
-

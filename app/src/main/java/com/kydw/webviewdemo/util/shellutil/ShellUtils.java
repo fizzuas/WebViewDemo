@@ -236,72 +236,22 @@ public class ShellUtils {
 
     }
 
-    public static CommandResult execClick(int x, int y) {
-        //(303,353)
-        String cmd1 = "sendevent /dev/input/event5 0001 330 00000001";// BTN touch事件 值为1
-
-        String cmd2 = " sendevent /dev/input/event5 0003 58  00000001";//Pressure on contact area
-
-        String cmd3 = " sendevent /dev/input/event5 0003 0053 " + y;
-        String cmd4 = " sendevent /dev/input/event5 0003 0054 " + x;
-
-        String cmd5 = " sendevent /dev/input/event5 0000 0002 00000000";
-
-        String cmd6 = " sendevent /dev/input/event5 0000 0000 00000000"; //同步
-
-        //-------------------
-
-        String cmd7 = " sendevent /dev/input/event5 0001 0330 00000000"; // BTN touch事件 值为0
-
-        String cmd8 = " sendevent /dev/input/event5 0003 0058 00000000"; //Pressure on contact area
-
-        String cmd9 = " sendevent /dev/input/event5 0003 0053 " + y;
-        String cmd10 = " sendevent /dev/input/event5 0003 0054 " + x;
-
-        String cmd11 = " sendevent /dev/input/event5 0000 0002 00000000";
-        String cmd12 = "sendevent /dev/input/event5 0000 0000 00000000";   //同步
-
-        String[] cmds = new String[]{cmd1, cmd2, cmd3, cmd4, cmd5, cmd6, cmd7, cmd8, cmd9, cmd10, cmd11, cmd12};
-
-
-        return execCommand(cmds, true);
-
-
-    }
-
-    public static CommandResult execClick2(int x, int y) {
-        //(303,353)
-        String cmd1 = "sendevent /dev/input/event5 0001 330 00000001";// BTN touch事件 值为1
-
-
-        String cmd2 = "sendevent /dev/input/event5 0003 0053 " + y;
-        String cmd3 = "sendevent /dev/input/event5 0003 0054 " + x;
-
-        String cmd4 = "sendevent /dev/input/event5 0000 0002 00000000";
-        String cmd5 = "sendevent /dev/input/event5 0000 0000 00000000";//同步
-
-        String cmd6 = "sendevent /dev/input/event5 0000 0002 00000000";
-        String cmd7 = "sendevent /dev/input/event5 0000 0000 00000000";//同步
-
-        String cmd8 = "sendevent /dev/input/event5 0001 0330 00000000";// BTN touch事件 值为0
-
-        String cmd9 = "sendevent /dev/input/event5 0003 0053 00000000";
-        String cmd10 = "sendevent /dev/input/event5 0003 0054 00000900";
-
-        String cmd11 = "sendevent /dev/input/event5 0000 0002 00000000";
-        String cmd12 = "sendevent /dev/input/event5 0000 0000 00000000";   //同步
-
-        String[] cmds = new String[]{cmd1, cmd2, cmd3, cmd4, cmd5, cmd6, cmd7, cmd8, cmd9, cmd10, cmd11, cmd12};
-
-
-        return execCommand(cmds, true);
-    }
 
 
     public static CommandResult
     execSwipe(int x0, int y0, int x1, int y1, int ms) {
         String cmd = "input touchscreen swipe " + x0 + " " + y0 + " " + x1 + " " + y1 + " " + ms;
-        return execCommand(cmd, true, false);
+        return execCommand(cmd, true, true);
+    }
+
+    public static CommandResult execTap(int x, int y) {
+        String cmd = "input touchscreen tap " + x + " " + y;
+        return execCommand(cmd, true, true);
+    }
+
+    public static CommandResult execInput(String content) {
+        String cmd = "input text  " + content;
+        return execCommand(cmd, true, true);
     }
 
 }

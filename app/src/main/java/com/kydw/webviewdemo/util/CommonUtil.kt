@@ -34,3 +34,15 @@ fun getAppVersionName(context: Context): String? {
     return versionName
 }
 
+fun isOnline(): Boolean {
+    val runtime = Runtime.getRuntime()
+    try {
+        val p = runtime.exec("ping -c 3 www.baidu.com")
+        val ret = p.waitFor()
+        return ret == 0
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return false
+}
+

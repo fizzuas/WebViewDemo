@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-
 import android.os.*
 import android.util.Log
 import android.view.MotionEvent
@@ -14,12 +13,15 @@ import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import com.kydw.webviewdemo.R
+import androidx.core.content.edit
+import androidx.fragment.app.FragmentActivity
+import com.bumptech.glide.load.engine.executor.GlideExecutor.UncaughtThrowableStrategy.LOG
+import com.kydw.webviewdemo.*
+import com.kydw.webviewdemo.adapter.Model
 import com.kydw.webviewdemo.dialog.JAlertDialog
+import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.CMD
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
-import com.kydw.webviewdemo.util.PermissionUtil
-import com.kydw.webviewdemo.util.appendFile
 import com.tencent.smtt.export.external.interfaces.SslError
 import com.tencent.smtt.export.external.interfaces.SslErrorHandler
 import com.tencent.smtt.sdk.*
@@ -27,23 +29,26 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import java.io.File
 import java.lang.ref.WeakReference
+import java.util.*
 
 
-const val TAG: String = "oyx"
+const val TAG_CHECK = "check exception:\t"
+const val CHECK_TIME_INTERVAL = 5 * 60 * 1000L
 
-class BaiduMWebActivity : AppCompatActivity() {
-    val pageCheck =
-        "https://wappass.baidu.com/static/captcha/tuxing.html?&ak=248b24c134a6b4f52ee85f8b9577d4a8&backurl=https%3A%2F%2Fm.baidu.com%2Ffrom%3D844b%2Fs%3Fpn%3D10%26usm%3D3%26word%3D%25E9%2592%25A5%25E5%258C%2599%25E6%259C%25BA%26sa%3Dnp%26ms%3D1%26rqid%3D10964520929320459358%26params_ssrt%3Dsmarty&logid=9950648836190522585&signature=819bd5a304bb5a74607e492e26f461b5&timestamp=1608519201"
+class WebActivity : AppCompatActivity() {
+
+    var isDealingWebError = false
     lateinit var webview: WebView
-    val isRoot = false
     var mCircleCount = 1
     var mCircleIndex = 1
 
+    val isRoot = true
     private var mLoadingDbDialog: JAlertDialog? = null
-    private val obj = MInJavaScriptLocalObj(this)
+    private var mLoadingCheckNetDialog: JAlertDialog? = null
+
+    private val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://www.baidu.com/"
 
-    //    m.51baomu.cn
 
     val mKeyWords =
         mutableListOf<Pair<String, String>>()
@@ -55,8 +60,8 @@ class BaiduMWebActivity : AppCompatActivity() {
 
     val handler = MyHandler(this)
 
-    class MyHandler(activity: BaiduMWebActivity) : Handler() {
-        private val mActivity: WeakReference<BaiduMWebActivity> = WeakReference(activity)
+    class MyHandler(activity: WebActivity) : Handler() {
+        private val mActivity: WeakReference<WebActivity> = WeakReference(activity)
 
         override fun handleMessage(msg: Message) {
             if (mActivity.get() == null) {
@@ -64,16 +69,22 @@ class BaiduMWebActivity : AppCompatActivity() {
             }
             val activity = mActivity.get()
             when (msg.what) {
-                0 -> {
-                    //次 页not  found，或者满页
+                MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT -> {
+                    //次 页not  found，或者搜索满页， 下一个循环
                     activity?.indexNext()
                     activity?.request()
                 }
-                1 -> {
-                    activity?.printUserAgent()
-                    //单个请求单次访问结束
+                MSG_TARGET_JUMP_SUC -> {
+                    //单个请求单次访问结束，下一个循环
                     activity?.indexNext()
                     activity?.request()
+                }
+                MSG_WEB_VIEW_RECEIVE_ERROR -> {
+                    ToastUtil.showShort(activity, "检测到网络异常，在处理...")
+                    activity?.dealWebException()
+                }
+                MSG_CHECKING_WEB_UPDATE -> {
+                    activity?.checkWebUpdate()
                 }
                 else -> {
                 }
@@ -81,12 +92,81 @@ class BaiduMWebActivity : AppCompatActivity() {
         }
     }
 
-    fun printUserAgent() {
-        Log.i(MyTag, "user-agent=" + webview.settings.userAgentString)
+    private fun checkWebUpdate() {
+        val curTime = Date().time
+        val lastTime = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+            .getLong(KEY_LOAD_PAGE_TIME, curTime)
+        Log.i(MyTag, TAG_CHECK + "curTime=" + curTime + "\t" + "lastTime=" + lastTime)
+        Log.i(MyTag,
+            TAG_CHECK + "小于五分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
+
+        if ((curTime - lastTime) > CHECK_TIME_INTERVAL) {
+            Log.e(MyTag, TAG_CHECK + "WEB_NO_UPDATE_5_MIN")
+            ToastUtil.show(this, "检查到网页五分钟没有更新")
+            dealWebException()
+        }
     }
 
+    private fun dealWebException() {
+        if (!isDealingWebError) {
+            isDealingWebError = true
+            var count = 0
+            GlobalScope.launch(Dispatchers.Main) {
+                if (mLoadingCheckNetDialog == null) {
+                    mLoadingCheckNetDialog =
+                        JAlertDialog.Builder(this@WebActivity)
+                            .setContentView(R.layout.dialog_waiting_net)
+                            .setText(R.id.content, if (count > 100) "请检查4G卡是否有流量" else "网络已断开...")
+                            .setWidth_Height_dp(300, 120).setCancelable(isRoot)
+                            .create()
+                }
+                mLoadingCheckNetDialog?.show()
+                do {
+                    count++
+                    ShellUtils.execCommand(CMD.DATA_ON, true)
+                    ShellUtils.execCommand(CMD.WIFI_OFF, true)
+                    delay(2000)
+                    if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
+                        webViewGoBack()
+                        isDealingWebError = false
+                        mLoadingCheckNetDialog?.dismiss()
+                        return@launch
+                    }
+                } while (true)
+            }
+        }
+    }
+
+    private fun webViewGoBack() {
+        if (webview.canGoBack()) {
+            webview.goBack()
+        } else {
+            webview.loadUrl(baiduIndexUrl)
+        }
+    }
+
+
     fun request() {
-        webview.loadUrl(pageCheck)
+        if (mRequestIndex < mKeyWords.size) {
+            //单次循环一个请求结束
+            webview.loadUrl(baiduIndexUrl)
+        } else {
+            //一个循环结束
+            if (mCircleCount == 0) {
+                //无限循环
+                nextCircle()
+            } else {
+                if (mCircleIndex == mCircleCount) {
+                    //第mCircleIndex次循环结束
+                    ToastUtil.show(this, "循环结束")
+                    finish()
+                } else {
+                    //开启下一次循环
+                    nextCircle()
+                }
+                mCircleIndex++
+            }
+        }
     }
 
     private fun nextCircle() {
@@ -94,35 +174,44 @@ class BaiduMWebActivity : AppCompatActivity() {
         if (mLoadingDbDialog == null) {
             mLoadingDbDialog =
                 JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
-                    .setWidth_Height_dp(300, 120).setCancelable(false)
+                    .setWidth_Height_dp(300, 120).setCancelable(isRoot)
                     .create()
         }
         mLoadingDbDialog?.show()
 
-
+        // switchIP
         GlobalScope.launch(Dispatchers.IO) {
             val result0 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-            if (result0 != null && result0.successMsg != null) {
+            if (result0?.successMsg != null) {
                 val sucMsg0 = result0.successMsg!!
-                Log.i(MyTag, "result0.sucMsg0=" + sucMsg0?.toString() + ", ")
+                Log.i(MyTag, "result0.sucMsg0=$sucMsg0, ")
                 saveIP(sucMsg0)
 
             }
 
-
             ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
-            delay(1000)
+            delay(2000)
             ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
 
             //关掉飞行时，4G 需要慢慢打开
-            delay(10000)
-            val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-            if (result1 != null && result1.successMsg != null) {
-                Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
-                appendFile(result1.successMsg + "\n\n",
-                    getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
-                    this@BaiduMWebActivity)
+            delay(2000)
+
+            for (i in 1..60) {
+                if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
+                    val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+                    if (result1?.successMsg != null) {
+                        Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
+                        appendFile(result1.successMsg + "\n\n",
+                            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
+                            this@WebActivity)
+                    }
+                    break
+                } else {
+                    Log.i(MyTag, "网络未建立，再等2秒,$i")
+                    delay(2000)
+                }
             }
+            delay(2000)
             withContext(Dispatchers.Main) {
                 mLoadingDbDialog?.dismiss()
                 mRequestIndex = 0
@@ -135,21 +224,28 @@ class BaiduMWebActivity : AppCompatActivity() {
     private fun saveIP(sucMsg0: String) {
         appendFile(sucMsg0,
             getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt", this)
+
     }
 
     override fun onDestroy() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         destroyWebView()
+        handler.removeCallbacksAndMessages(null)
         super.onDestroy()
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        PermissionUtil.askForRequiredPermissions(this)
+        val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
+        mCircleCount = intent.getIntExtra(CIRCLE_COUNT, 0)
 
+        list?.forEach {
+            Log.i(MyTag, it.toString())
+            val model = it as Model
+            mKeyWords.add(Pair(model.keyword!!, model.sites!!))
+        }
         webview = WebView(applicationContext)
         val lp = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         webview.layoutParams = lp
@@ -172,26 +268,68 @@ class BaiduMWebActivity : AppCompatActivity() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 Log.i(TAG, "onPageStarted = $url")
+
+            }
+
+            override fun onReceivedError(p0: WebView?, p1: Int, p2: String?, p3: String?) {
+                super.onReceivedError(p0, p1, p2, p3)
+                handler.sendEmptyMessage(MSG_WEB_VIEW_RECEIVE_ERROR)
+                Log.e(MyTag, TAG_CHECK + "onReceivedError")
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                Log.i(TAG, "onPageFinished = $url")
-                if (url!!.contains("baidu.com")) {
-                    Log.e(TAG, "百度搜索页面=$url")
+                super.onPageFinished(view, url)
+                Log.i(MyTag, TAG_CHECK + "progress=" + view!!.progress)
+
+                view.loadUrl(
+                    "javascript:" + "var url=\"${url!!}\";" +
+                            "window.java_obj.showSource("
+                            + "document.getElementsByTagName('html')[0].innerHTML,url);"
+                )
+
+                val keyWord = mKeyWords[mRequestIndex].first
+                val siteInfo = mKeyWords[mRequestIndex].second
+
+                if (url.equals(baiduIndexUrl)) {
+                    Log.e(TAG, "百度一下页面加载成功=" + url)
+                    //首页，提交表单
+                    val jsForm =
+                        application.assets.open("js_bd_2second.js").bufferedReader().use {
+                            it.readText()
+                        }
+                    Log.i(MyTag, "keyword$keyWord")
+                    Log.i(MyTag, "siteInfo$siteInfo")
+                    val head = "var keyword=\"$keyWord\";"
+                    view.loadUrl("javascript:$head$jsForm")
+
+                } else if (url.contains(siteInfo)) {
+                    Log.e(TAG, "目标页加载成功=$url")
+                    val jsLook = application.assets.open("js_look.js").bufferedReader().use {
+                        it.readText()
+                    }
+                    view.loadUrl("javascript:$jsLook")
+                } else if (url.contains("baidu.com")) {
+                    Log.e(TAG, "百度搜索页面加载=$url")
                     if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
                         //验证码
-                        Log.e(MyTag, "发现验证码界面" + url)
+                        Log.e(MyTag, "发现验证码界面加载$url")
                         val jsSwipe =
                             application.assets.open("js_swipe_vc_by_cb.js").bufferedReader().use {
                                 it.readText()
                             }
-                        view!!.loadUrl("javascript:$jsSwipe")
+                        view.loadUrl("javascript:$jsSwipe")
                     } else {
-                        Log.e(MyTag, "发现下一页" + url)
+                        Log.e(MyTag, "发现下一页加载" + url)
+                        //Next 页
+                        val jsToNext =
+                            application.assets.open("js_to_next.js").bufferedReader().use {
+                                it.readText()
+                            }
+                        val head = "var targetSite = \"$siteInfo\";"
+                        view.loadUrl("javascript:$head$jsToNext")
                     }
                 }
 
-                super.onPageFinished(view, url)
             }
 
             override fun onReceivedSslError(
@@ -210,7 +348,14 @@ class BaiduMWebActivity : AppCompatActivity() {
         request()
         webview.keepScreenOn = true
 
-
+        //循环检查网页
+        val runnable = object : Runnable {
+            override fun run() {
+                handler.sendEmptyMessage(MSG_CHECKING_WEB_UPDATE)
+                handler.postDelayed(this, CHECK_TIME_INTERVAL)
+            }
+        }
+        handler.postDelayed(runnable, CHECK_TIME_INTERVAL)
     }
 
     override fun onResume() {
@@ -250,34 +395,8 @@ class BaiduMWebActivity : AppCompatActivity() {
 
         webSettings.javaScriptEnabled = true
 
-        webSettings.userAgentString =
-            "User-Agent:Android"
+        webSettings.userAgentString = "User-Agent:Android"
 
-        //手机 QQ浏览器  百度手机浏览器首页
-//        "Mozilla/5.0 (Linux; U; Android 10; zh-cn; ELS-AN00 Build/HUAWEIELS-AN00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/11.0 Mobile Safari/537.36 COVC/045429"
-
-        //手机 Firefox  "User-Agent:Android"首页
-//            "Mozilla/5.0 (Android 4.2; rv:19.0) Gecko/20121129 Firefox/19.0"
-
-        //PC  Win7 Firefox  缩小版，跟百度浏览器头部相同
-//            "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:61.0) Gecko/20100101 Firefox/61.0"
-//
-        //Android	Samsung三星手机	搜狗手机浏览器
-//            "Mozilla/5.0 (Linux; U; Android 4.4.4; zh-cn; SM-G7508Q Build/KTU84P) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 SogouMSE,SogouMobileBrowser/5.0.3"
-
-        //Android	索尼爱立信MT15i	UC 浏览器
-//            "Mozilla/5.0 (Linux; U; Android 2.3.4; zh-cn; MT15i Build/4.0.2.A.0.62) UC AppleWebKit/530+ (KHTML, like Gecko) Mobile Safari/530"
-        //Android	魅族MX3	Webkit
-//            "Mozilla/5.0 (Linux; U; Android 4.4.4; zh-cn; M351 Build/KTU84P) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"
-        //特殊	360spider		360安全UA
-        //"360spider(http://webscan.360.cn)"
-        //PC	Windows	Win10	Google浏览器 Chrome
-//        "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
-        //PC	Windows	Win10	360浏览器(无痕)
-//            "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36 QIHU 360SE"
-        //手机	Android	华为Mate 8	手机百度
-//        "Mozilla/5.0 (Linux; Android 7.0; HUAWEI NXT-AL10 Build/HUAWEINXT-AL10) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/35.0.1916.138 Mobile Safari/537.36 T7/7.4 baiduboxapp/8.2.5 (Baidu; P1 7.0)"
-//            "Mozilla/5.0 (Linux; U; Android 6.0.1; zh-cn; Redmi 4 Build/MMB29M) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/61.0.3163.128 Mobile Safari/537.36 XiaoMi/MiuiBrowser/10.8.1"
     }
 
     override fun onBackPressed() {
@@ -319,13 +438,24 @@ class BaiduMWebActivity : AppCompatActivity() {
     }
 }
 
-private class MInJavaScriptLocalObj(val context: Context) {
+private class InJavaScriptLocalObj(val context: Context) {
+
+
     @JavascriptInterface
-    fun showSource(html: String) {
-        Log.i(TAG, "====>html_showSource=$html")
-        File(context.getExternalFilesDir(null)!!.absolutePath + File.separator + "show.html").writeText(
-            html
+    fun showSource(html: String, url: String) {
+        Log.i(MyTag, "showSource")
+        appendFile(
+            "\n" + "url=" + url + "\n" + html.subSequence(0, 200) + "\n",
+            context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls.txt",
+            context
         )
+        // 写入当前网络加载成功的时间
+        val date = Date()
+        val curTime = date.time
+        context.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).edit {
+            putLong(KEY_LOAD_PAGE_TIME, curTime)
+        }
+
     }
 
     @JavascriptInterface
@@ -338,6 +468,7 @@ private class MInJavaScriptLocalObj(val context: Context) {
                 context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt",
                 context
             )
+
     }
 
     @JavascriptInterface
@@ -345,7 +476,7 @@ private class MInJavaScriptLocalObj(val context: Context) {
         Log.i(TAG, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
         GlobalScope.launch(Dispatchers.Main) {
             // 40页都找不到，下一页异常
-            (context as BaiduMWebActivity).handler.sendEmptyMessage(0)
+            (context as WebActivity).handler.sendEmptyMessage(MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT)
         }
     }
 
@@ -354,10 +485,9 @@ private class MInJavaScriptLocalObj(val context: Context) {
         Log.i(TAG, "finish")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
-            (context as BaiduMWebActivity).handler.sendEmptyMessage(1)
+            (context as WebActivity).handler.sendEmptyMessage(MSG_TARGET_JUMP_SUC)
         }
     }
-
 
     @JavascriptInterface
     fun swipe() {
@@ -372,7 +502,7 @@ private class MInJavaScriptLocalObj(val context: Context) {
             Log.i(MyTag, result.toString())
         }
     }
-}
 
+}
 
 

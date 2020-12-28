@@ -1,7 +1,6 @@
-package com.kydw.webviewdemo.pc
+package com.kydw.webviewdemo.test
 
 import android.annotation.SuppressLint
-import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -10,17 +9,13 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import com.kydw.webviewdemo.R
+import com.kydw.webviewdemo.baidu_simplify.MyTag
 import com.kydw.webviewdemo.util.getScreenRealHeight
 import com.kydw.webviewdemo.util.getScreenRealWidth
-import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import com.kydw.webviewdemo.util.statueHeight
 import kotlinx.android.synthetic.main.activity_shell_click.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
-class ShellClickActivity : AppCompatActivity() {
+class TestAutoSwipeByShellActivity : AppCompatActivity() {
     //记录btn初始位置
     var startX = 0
     var startY = 0

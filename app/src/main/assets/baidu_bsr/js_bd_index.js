@@ -1,0 +1,1 @@
+document.getElementsByName('word')[0].value=keyword;

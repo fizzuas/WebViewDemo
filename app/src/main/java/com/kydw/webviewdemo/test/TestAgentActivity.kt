@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.kydw.webviewdemo.R
-import com.kydw.webviewdemo.pc.MyTag
+import com.kydw.webviewdemo.baidu_simplify.MyTag
 import com.tencent.smtt.sdk.WebView
 
 class TestAgentActivity : AppCompatActivity() {

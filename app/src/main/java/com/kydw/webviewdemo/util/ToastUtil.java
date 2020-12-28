@@ -25,4 +25,14 @@ public class ToastUtil {
             }
         });
     }
+
+    public static void showShort(final Context context, final String message) {
+        ((Activity) context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(context.getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 }
