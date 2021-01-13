@@ -9,7 +9,7 @@ class ModelAdapter(data: MutableList<Model>) :
     BaseQuickAdapter<Model, BaseViewHolder>(R.layout.item_model, data = data), DraggableModule {
     override fun convert(holder: BaseViewHolder, item: Model) {
         holder.setText(R.id.tv_kw, item.keyword)
-        holder.setText(R.id.tv_sites, item.sites)
+        holder.setText(R.id.tv_sites, item.site)
 
     }
 }

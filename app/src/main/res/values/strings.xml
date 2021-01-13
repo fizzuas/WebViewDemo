@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">模拟点击排行</string>
+    <string name="update_version">版本升级</string>
+    <string name="update">升级</string>
+    <string name="cancel">取消</string>
+    <string name="upgradeing_soft_package">正在下载软件升级包</string>
 </resources>

@@ -14,10 +14,9 @@ import android.webkit.JavascriptInterface
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
-import androidx.fragment.app.FragmentActivity
-import com.bumptech.glide.load.engine.executor.GlideExecutor.UncaughtThrowableStrategy.LOG
 import com.kydw.webviewdemo.*
 import com.kydw.webviewdemo.adapter.Model
+import com.kydw.webviewdemo.bean.TUrl
 import com.kydw.webviewdemo.dialog.JAlertDialog
 import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.CMD
@@ -28,12 +27,14 @@ import com.tencent.smtt.sdk.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import java.io.File
+import java.lang.StringBuilder
 import java.lang.ref.WeakReference
 import java.util.*
 
 
 const val TAG_CHECK = "check exception:\t"
 const val CHECK_TIME_INTERVAL = 5 * 60 * 1000L
+
 
 class WebActivity : AppCompatActivity() {
 
@@ -49,14 +50,9 @@ class WebActivity : AppCompatActivity() {
     private val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://www.baidu.com/"
 
-
     val mKeyWords =
-        mutableListOf<Pair<String, String>>()
-    var mRequestIndex = 0
-
-    fun indexNext() {
-        mRequestIndex++
-    }
+        mutableListOf<Pair<String, MutableList<TUrl>>>()
+    var mKeyWordIndex = 0
 
     val handler = MyHandler(this)
 
@@ -71,13 +67,11 @@ class WebActivity : AppCompatActivity() {
             when (msg.what) {
                 MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT -> {
                     //次 页not  found，或者搜索满页， 下一个循环
-                    activity?.indexNext()
-                    activity?.request()
+                    activity?.nextKeyWord()
                 }
                 MSG_TARGET_JUMP_SUC -> {
-                    //单个请求单次访问结束，下一个循环
-                    activity?.indexNext()
-                    activity?.request()
+                    //一个keyword  的单个请求访问成功
+                    activity?.onTargetJumpSuc()
                 }
                 MSG_WEB_VIEW_RECEIVE_ERROR -> {
                     ToastUtil.showShort(activity, "检测到网络异常，在处理...")
@@ -91,6 +85,22 @@ class WebActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun onTargetJumpSuc() {
+        var flag = false //一个关键字下请求有一个未请求到就为true
+        mKeyWords[mKeyWordIndex].second.forEach {
+            if (!it.isRequested) {
+                flag = true
+            }
+        }
+        if (flag) {
+            nextRequest()
+        } else {
+            nextKeyWord()
+        }
+
+    }
+
 
     private fun checkWebUpdate() {
         val curTime = Date().time
@@ -146,30 +156,17 @@ class WebActivity : AppCompatActivity() {
     }
 
 
-    fun request() {
-        if (mRequestIndex < mKeyWords.size) {
-            //单次循环一个请求结束
-            webview.loadUrl(baiduIndexUrl)
-        } else {
-            //一个循环结束
-            if (mCircleCount == 0) {
-                //无限循环
-                nextCircle()
-            } else {
-                if (mCircleIndex == mCircleCount) {
-                    //第mCircleIndex次循环结束
-                    ToastUtil.show(this, "循环结束")
-                    finish()
-                } else {
-                    //开启下一次循环
-                    nextCircle()
-                }
-                mCircleIndex++
-            }
+    /*
+    * 同一个keyword 下一个请求
+    * 目标页返回百度搜索页
+    * */
+    private fun nextRequest() {
+        if (webview.canGoBack()) {
+            webview.goBack()
         }
     }
 
-    private fun nextCircle() {
+    private fun nextKeyWord() {
         //切换IP
         if (mLoadingDbDialog == null) {
             mLoadingDbDialog =
@@ -186,7 +183,6 @@ class WebActivity : AppCompatActivity() {
                 val sucMsg0 = result0.successMsg!!
                 Log.i(MyTag, "result0.sucMsg0=$sucMsg0, ")
                 saveIP(sucMsg0)
-
             }
 
             ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
@@ -213,18 +209,94 @@ class WebActivity : AppCompatActivity() {
             }
             delay(2000)
             withContext(Dispatchers.Main) {
-                mLoadingDbDialog?.dismiss()
-                mRequestIndex = 0
-                clearCache()
-                webview.loadUrl(baiduIndexUrl)
+                mLoadingDbDialog?.hide()
+                if (mKeyWordIndex < mKeyWords.lastIndex) {
+                    mKeyWordIndex++
+                    webview.loadUrl(baiduIndexUrl)
+                } else {
+                    //一个循环结束
+                    if (mCircleCount == 0) {
+                        //无限循环
+                        nextCircle()
+                    } else {
+                        if (mCircleIndex == mCircleCount) {
+                            //第mCircleIndex次循环结束
+                            ToastUtil.show(this@WebActivity, "循环结束")
+                            finish()
+                        } else {
+                            //开启下一次循环
+                            nextCircle()
+                        }
+                        mCircleIndex++
+                    }
+                }
             }
         }
+
+
+    }
+
+    private fun nextCircle() {
+        mLoadingDbDialog?.dismiss()
+        mKeyWordIndex = 0
+        mKeyWords.forEach {
+            it.second.forEach {
+                it.isRequested = false
+            }
+        }
+        clearCache()
+        webview.loadUrl(baiduIndexUrl)
+
+//        //切换IP
+//        if (mLoadingDbDialog == null) {
+//            mLoadingDbDialog =
+//                JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
+//                    .setWidth_Height_dp(300, 120).setCancelable(isRoot)
+//                    .create()
+//        }
+//        mLoadingDbDialog?.show()
+//
+//        // switchIP
+//        GlobalScope.launch(Dispatchers.IO) {
+//            val result0 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+//            if (result0?.successMsg != null) {
+//                val sucMsg0 = result0.successMsg!!
+//                Log.i(MyTag, "result0.sucMsg0=$sucMsg0, ")
+//                saveIP(sucMsg0)
+//            }
+//
+//            ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
+//            delay(2000)
+//            ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
+//
+//            //关掉飞行时，4G 需要慢慢打开
+//            delay(2000)
+//
+//            for (i in 1..60) {
+//                if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
+//                    val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+//                    if (result1?.successMsg != null) {
+//                        Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
+//                        appendFile(result1.successMsg + "\n\n",
+//                            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
+//                            this@WebActivity)
+//                    }
+//                    break
+//                } else {
+//                    Log.i(MyTag, "网络未建立，再等2秒,$i")
+//                    delay(2000)
+//                }
+//            }
+//            delay(2000)
+//            withContext(Dispatchers.Main) {
+//
+//            }
+//        }
     }
 
     private fun saveIP(sucMsg0: String) {
         appendFile(sucMsg0,
             getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt", this)
-
     }
 
     override fun onDestroy() {
@@ -238,32 +310,26 @@ class WebActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
-        mCircleCount = intent.getIntExtra(CIRCLE_COUNT, 0)
+        initData(intent)
 
-        list?.forEach {
-            Log.i(MyTag, it.toString())
-            val model = it as Model
-            mKeyWords.add(Pair(model.keyword!!, model.sites!!))
-        }
         webview = WebView(applicationContext)
         val lp = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         webview.layoutParams = lp
         content.addView(webview)
 
         webview.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
-                    return false
-                } else try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    view!!.context.startActivity(intent)
-                    return true
-                } catch (e: Exception) {
-                    Log.i(TAG, "shouldOverrideUrlLoading Exception:$e")
-                    return true
-                }
-            }
+//            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+//                if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
+//                    return false
+//                } else try {
+//                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+//                    view!!.context.startActivity(intent)
+//                    return true
+//                } catch (e: Exception) {
+//                    Log.i(TAG, "shouldOverrideUrlLoading Exception:$e")
+//                    return true
+//                }
+//            }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
@@ -287,11 +353,11 @@ class WebActivity : AppCompatActivity() {
                             + "document.getElementsByTagName('html')[0].innerHTML,url);"
                 )
 
-                val keyWord = mKeyWords[mRequestIndex].first
-                val siteInfo = mKeyWords[mRequestIndex].second
+                val keyWord = mKeyWords[mKeyWordIndex].first
+                val siteInfo = mKeyWords[mKeyWordIndex].second
 
                 if (url.equals(baiduIndexUrl)) {
-                    Log.e(TAG, "百度一下页面加载成功=" + url)
+                    Log.e(TAG, "百度首页=" + url)
                     //首页，提交表单
                     val jsForm =
                         application.assets.open("js_bd_2second.js").bufferedReader().use {
@@ -301,9 +367,15 @@ class WebActivity : AppCompatActivity() {
                     Log.i(MyTag, "siteInfo$siteInfo")
                     val head = "var keyword=\"$keyWord\";"
                     view.loadUrl("javascript:$head$jsForm")
-
-                } else if (url.contains(siteInfo)) {
+                } else if (hasTargetSite(url,
+                        siteInfo) && !url.startsWith("https://www.baidu.com/") && !url.startsWith("https://m.baidu.com/")
+                ) {
                     Log.e(TAG, "目标页加载成功=$url")
+                    siteInfo.forEach {
+                        if (url.contains(it.url)) {
+                            it.isRequested = true
+                        }
+                    }
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
                     }
@@ -319,13 +391,23 @@ class WebActivity : AppCompatActivity() {
                             }
                         view.loadUrl("javascript:$jsSwipe")
                     } else {
-                        Log.e(MyTag, "发现下一页加载" + url)
+                        Log.e(MyTag, "发现下一页加载=" + url)
                         //Next 页
                         val jsToNext =
                             application.assets.open("js_to_next.js").bufferedReader().use {
                                 it.readText()
                             }
-                        val head = "var targetSite = \"$siteInfo\";"
+
+                        val jsList = StringBuilder()
+                        jsList.append("[")
+                        for (i in siteInfo.indices) {
+                            if (!siteInfo[i].isRequested) {
+                                jsList.append("\"${siteInfo[i].url}\",")
+                            }
+                        }
+                        jsList.append("]")
+                        val head = "var targetSites=$jsList;"
+                        Log.e(MyTag, "jsList head=" + head)
                         view.loadUrl("javascript:$head$jsToNext")
                     }
                 }
@@ -345,7 +427,7 @@ class WebActivity : AppCompatActivity() {
 
         webview.addJavascriptInterface(obj, "java_obj")
         setWebView(webview)
-        request()
+        webview.loadUrl(baiduIndexUrl)
         webview.keepScreenOn = true
 
         //循环检查网页
@@ -356,6 +438,44 @@ class WebActivity : AppCompatActivity() {
             }
         }
         handler.postDelayed(runnable, CHECK_TIME_INTERVAL)
+    }
+
+    private fun initData(intent: Intent) {
+        val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
+        mCircleCount = intent.getIntExtra(CIRCLE_COUNT, 0)
+
+        list!!.forEach {
+            Log.i(MyTag, "initData\t" + it.toString())
+        }
+        val maps = list.groupBy { (it as Model).keyword }
+        for (item in maps.toList()) {
+            mKeyWords.add(Pair(item.first!!,
+                item.second.map { TUrl((it as Model).site!!, false) }.toMutableList()))
+        }
+        mKeyWords.forEach {
+            Log.e(MyTag, "initData after \t" + it.toString())
+        }
+
+        val siteInfo = mKeyWords[mKeyWordIndex].second
+        val jsList = StringBuilder()
+        jsList.append("[")
+        for (i in siteInfo.indices) {
+            if (!siteInfo[i].isRequested) {
+                jsList.append("\"${siteInfo[i].url}\",")
+            }
+        }
+        jsList.append("]")
+        Log.e(MyTag, "jsList=" + jsList)
+    }
+
+    private fun
+            hasTargetSite(url: String, siteInfo: MutableList<TUrl>): Boolean {
+        siteInfo.forEach {
+            if (url.contains(it.url)) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun onResume() {
@@ -396,6 +516,7 @@ class WebActivity : AppCompatActivity() {
         webSettings.javaScriptEnabled = true
 
         webSettings.userAgentString = "User-Agent:Android"
+//        webSettings.userAgentString = "Mozilla/5.0 (Linux; Android 10; MAR-AL00 Build/HUAWEIMAR-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.89 Mobile Safari/537.36 T7/11.19 SP-engine/2.15.0 baiduboxapp/11.19.5.10 (Baidu; P1 10)"
 
     }
 
@@ -438,14 +559,13 @@ class WebActivity : AppCompatActivity() {
     }
 }
 
+
 private class InJavaScriptLocalObj(val context: Context) {
-
-
     @JavascriptInterface
     fun showSource(html: String, url: String) {
         Log.i(MyTag, "showSource")
         appendFile(
-            "\n" + "url=" + url + "\n" + html.subSequence(0, 200) + "\n",
+            "\n" + "url=" + url + "\n" + html.subSequence(0, 50) + "\n",
             context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls.txt",
             context
         )

@@ -14,6 +14,30 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:padding="10dp"
+        android:id="@+id/tv_kw"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="关键字"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@+id/tv_sites"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_version_name"
+        app:layout_constraintBottom_toTopOf="@id/recy_configs" />
+
+    <TextView
+        android:padding="10dp"
+        android:id="@+id/tv_sites"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="网址"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/tv_kw"
+        app:layout_constraintTop_toBottomOf="@id/tv_version_name"
+        app:layout_constraintBottom_toTopOf="@id/recy_configs"/>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recy_configs"
         android:layout_width="0dp"
@@ -22,7 +46,8 @@
         app:layout_constraintBottom_toTopOf="@+id/but_addkw"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_version_name" />
+        app:layout_constraintTop_toBottomOf="@id/tv_kw"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -53,9 +78,18 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:text="添加关键词"
-        app:layout_constraintBottom_toBottomOf="@id/recy_configs"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/recy_configs"
+        app:layout_constraintEnd_toStartOf="@id/but_add_site"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/but_add_site"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="添加网址"
+        app:layout_constraintStart_toEndOf="@+id/but_addkw"
+        app:layout_constraintTop_toBottomOf="@+id/recy_configs"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <Button
         android:id="@+id/but_tonext"

@@ -3,24 +3,24 @@ package com.kydw.webviewdemo.adapter
 import android.os.Parcel
 import android.os.Parcelable
 
+const val SITE = 0
+const val KEYWORD_SITE = 1
 
 data class Model(
     var keyword: String?,
-    var sites: String?
-
-    ) : Parcelable {
+    var site: String?,
+    val type: Int = KEYWORD_SITE
+) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString(),
-        parcel.readString()) {
-    }
-
-    override fun toString(): String {
-        return "Model(keyword='$keyword', sites='$sites')"
+        parcel.readString(),
+        parcel.readInt()) {
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(keyword)
-        parcel.writeString(sites)
+        parcel.writeString(site)
+        parcel.writeInt(type)
     }
 
     override fun describeContents(): Int {
@@ -37,3 +37,5 @@ data class Model(
         }
     }
 }
+
+

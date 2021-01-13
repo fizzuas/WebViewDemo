@@ -17,14 +17,10 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".test.TestDialogActivity">
-
-        </activity>
+        <activity android:name=".test.TestDialogActivity"></activity>
         <activity android:name=".test.TestCoroutinesActivity" />
         <activity android:name=".baidu_sougou.WebBrowserActivity" />
-        <activity android:name=".baidu_sougou.CMDBrowserActivity" >
-
-        </activity>
+        <activity android:name=".baidu_sougou.CMDBrowserActivity"></activity>
         <activity
             android:name=".baidu_simplify.CMDActivity"
             android:screenOrientation="portrait">

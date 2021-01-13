@@ -2,9 +2,7 @@ package com.kydw.webviewdemo.baidu_sougou
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import android.os.*
 import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
@@ -177,7 +175,7 @@ class WebBrowserActivity : AppCompatActivity() {
         list?.forEach {
             Log.i(MyTag, it.toString())
             val model = it as Model
-            mKeyWords.add(Pair(model.keyword!!, model.sites!!))
+            mKeyWords.add(Pair(model.keyword!!, model.site!!))
         }
         webview = WebView(applicationContext)
         val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,

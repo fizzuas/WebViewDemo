@@ -66,9 +66,11 @@ if (pageNo.length == 0) {
         "\t site:\t" +
         site
     );
-    if (site == targetSite) {
-      targetEleA = scTitles[i];
-    }
+   for (let k in targetSites) {
+        if (targetSites[k] == site) {
+          targetEleA = scTitles[i];
+        }
+      }
   }
   var resultTitles = document.getElementsByClassName("result_title");
   logBack = logBack + "\n\n(result总共" + resultTitles.length + "项)";
@@ -95,9 +97,11 @@ if (pageNo.length == 0) {
         "\t site:\t" +
         site
     );
-    if (site == targetSite) {
-      targetEleA = resultTitles[i];
-    }
+     for (let k in targetSites) {
+          if (site == targetSites[k]) {
+            targetEleA = resultTitles[i];
+          }
+      }
   }
   /* 模拟滑动，然后跳转到第二页 */
   var time = randomNum(300,1250);
@@ -158,9 +162,12 @@ if (pageNo.length == 0) {
         site
     );
 
-    if (site == targetSite) {
-      targetEleA = rssultTitles[i];
-    }
+       for (let k in targetSites) {
+          if (site == targetSites[k]) {
+          console.log("\t 点击 site;\n"+site);
+            targetEleA = rssultTitles[i];
+          }
+        }
   }
 
   /* 模拟滑动，然后跳转到3..N页 */

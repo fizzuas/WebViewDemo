@@ -22,3 +22,8 @@ const val MSG_TARGET_JUMP_SUC = 1
 const val MSG_WEB_VIEW_RECEIVE_ERROR = 2
 const val MSG_CHECKING_WEB_UPDATE = 5
 
+const val KEY_CACHE_LIST = "KEY_CACHE_LIST"
+
+
+const val HOST_API = "http://47.111.177.58:9110/WebServices/AppUpdateWebService.svc/"
+const val HOST_DOWN = "http://47.111.177.58:9110"

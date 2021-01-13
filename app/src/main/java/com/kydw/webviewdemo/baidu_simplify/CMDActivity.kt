@@ -1,9 +1,12 @@
 package com.kydw.webviewdemo.baidu_simplify
 
 import android.annotation.SuppressLint
+import android.app.ProgressDialog
 import android.content.*
 import android.graphics.Canvas
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
@@ -14,30 +17,53 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.chad.library.adapter.base.listener.OnItemSwipeListener
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
-import com.kydw.webviewdemo.CIRCLE_COUNT
-import com.kydw.webviewdemo.DIALOG_INPUT
-import com.kydw.webviewdemo.KEYWORD_SITES
-import com.kydw.webviewdemo.R
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.kydw.webviewdemo.*
 import com.kydw.webviewdemo.adapter.Model
 import com.kydw.webviewdemo.adapter.ModelAdapter
+import com.kydw.webviewdemo.dialog.DIALOG_INPUT_SITE
 import com.kydw.webviewdemo.dialog.DialogInput
-import com.kydw.webviewdemo.dialog.JAlertDialog
+import com.kydw.webviewdemo.dialog.DialogInputSite
+import com.kydw.webviewdemo.network.UpdateService
+import com.kydw.webviewdemo.network.UploadFileInfo
+import com.kydw.webviewdemo.network.UploadFileResult
 import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
+import com.zhy.http.okhttp.OkHttpUtils
+import com.zhy.http.okhttp.callback.FileCallBack
 import kotlinx.android.synthetic.main.activity_c_m_d.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
 
 
 const val MyTag: String = "oyx"
 
-class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
-    var models = mutableListOf<Model>(Model("关键词", "网址"), Model("钥匙机", "www.kydz-wx.com"))
+class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
+    DialogInputSite.OnOKListener {
+    var models = mutableListOf<Model>(
+        Model("钥匙机", "www.kydz-wx.com"),
+        Model("钥匙机", "baike.baidu.com"),
+        Model("www.kydz-wx.com", "www.kydz-wx.com"),
+        Model("手机", "www.oneplus.com"),
+        Model("手机", "baike.baidu.com")
+    )
 
     //        var models = mutableListOf<Model>(Model("关键词", "网址"))
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
+    private val mDialog: ProgressDialog by lazy { ProgressDialog(this) }
 
     private val mDialogInput: DialogInput = DialogInput()
-    private var mLoadingDbDialog: JAlertDialog? = null
-
+    private val mStartDialog: DialogInputSite = DialogInputSite()
     var intentFilter = IntentFilter("android.intent.action.AIRPLANE_MODE")
 
     var receiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -49,8 +75,9 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
+
+        initData()
         setContentView(R.layout.activity_c_m_d)
 
         PermissionUtil.askForRequiredPermissions(this)
@@ -58,10 +85,12 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
         registerReceiver(receiver, intentFilter)
         but_tonext.setOnClickListener {
             val intent = Intent(this, WebActivity::class.java)
-            models.subList(1, models.size).forEach {
+            models.forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
             }
-            intent.putExtra(KEYWORD_SITES, models.subList(1, models.size).toTypedArray())
+
+
+            intent.putExtra(KEYWORD_SITES, models.toTypedArray())
             val count = et_count.text.toString().toIntOrNull()
 
             if (count != null) {
@@ -70,9 +99,8 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
                 ToastUtil.show(this, "请输入循环次数")
                 return@setOnClickListener
             }
-
-            if (models.size < 2) {
-                ToastUtil.show(this, "请输入关键词")
+            if (models.size < 1) {
+                ToastUtil.show(this, "请输入关键词或网址")
                 return@setOnClickListener
             }
 
@@ -101,7 +129,9 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
             val isOn = NetState.hasNetWorkConnection(this)
             Log.e(MyTag, "isON" + isOn + ";statue" + statue)
             if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
+
                 startActivity(intent)
+
             } else {
                 ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
             }
@@ -122,7 +152,25 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
         }
         tv_version_name.text = "version:" + getAppVersionName(this)
 
+        but_add_site.setOnClickListener {
+            mStartDialog.show(supportFragmentManager, DIALOG_INPUT_SITE)
+        }
+
     }
+
+    private fun initData() {
+        GlobalScope.launch(Dispatchers.Main) {
+            val content: String? =
+                ACache.get(this@CMDActivity).getAsString(KEY_CACHE_LIST)
+            if (content != null) {
+                val type = object : TypeToken<MutableList<Model>>() {}.type
+                models.addAll(Gson().fromJson(content, type))
+                modelAdapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+
 
     // 侧滑监听
     var onItemSwipeListener: OnItemSwipeListener = object : OnItemSwipeListener {
@@ -155,6 +203,7 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
     override fun onResume() {
         super.onResume()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        checkUpdate()
     }
 
     override fun onDestroy() {
@@ -169,6 +218,129 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
             models.add(Model(kw, it))
         }
         modelAdapter.notifyDataSetChanged()
+        saveCache()
+    }
+
+    override fun onOK(site: String) {
+        models.add(Model(site, site))
+        modelAdapter.notifyDataSetChanged()
+        saveCache()
+    }
+
+    private fun checkUpdate() {
+        LogUtils.i("checkUpdate")
+        val logging = HttpLoggingInterceptor()
+        logging.level = HttpLoggingInterceptor.Level.BODY
+
+        val httpClient: OkHttpClient.Builder = OkHttpClient.Builder()
+        httpClient.addInterceptor(logging)
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl("$HOST_API")
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(httpClient.build())
+            .build()
+
+        val service = retrofit.create(UpdateService::class.java)
+        val info = UploadFileInfo()
+        val version = packageManager.getPackageInfo(packageName, 0).versionName
+        info.Versions = version.toDouble()
+        LogUtils.i(info.toString())
+
+        val param = EncryptUtils.encryptData(info, UploadFileInfo::class.java)
+        val fileInfo = service.getUpdateApk(param!!)
+        fileInfo.enqueue(object : Callback<UploadFileResult> {
+            override fun onResponse(
+                call: Call<UploadFileResult>,
+                response: Response<UploadFileResult>
+            ) {
+                val fileResult = response.body()
+                if (fileResult?.Value != null) {
+                    if (!fileResult.Value.FileAddress.isNullOrEmpty()) {
+                        // 下载apk后安装
+                        LogUtils.i(fileResult.toString())
+                        showUpdateApkInfo(fileResult)
+                        return
+                    }
+                } else {
+                    LogUtils.i("不需要升级")
+                }
+            }
+
+            override fun onFailure(call: Call<UploadFileResult>, t: Throwable) {
+                LogUtils.e(t.toString())
+            }
+        })
+    }
+
+
+    private fun showUpdateApkInfo(fileResult: UploadFileResult) {
+        val builder = AlertDialog.Builder(this)
+        val updateMsg =
+            if (fileResult.Value == null || fileResult.Value.UpdateRemark.isNullOrEmpty()) "暂无" else fileResult.Value.UpdateRemark
+        builder.setTitle(getString(R.string.update_version) + fileResult.Value?.Versions)
+            .setMessage(updateMsg)
+            .setPositiveButton(getString(R.string.update)) { dialog, _ ->
+                dialog.dismiss()
+                loadNewVersion(fileResult.Value?.FileAddress)
+            }
+            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun loadNewVersion(fileAddress: String?) {
+        if (!fileAddress.isNullOrEmpty()) {
+            val url = "$HOST_DOWN$fileAddress".replace("~", "")
+            Log.e("下载", url)
+            mDialog.setTitle(getString(R.string.upgradeing_soft_package))
+            mDialog.max = 100
+            mDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
+            mDialog.show()
+            OkHttpUtils.get().url(url).build()
+                .execute(object : FileCallBack(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path,
+                    System.currentTimeMillis().toString() + "app.apk"
+                ) {
+                    override fun inProgress(progress: Float, total: Long, id: Int) {
+                        if (!mDialog.isShowing) {
+                            mDialog.show()
+                        }
+                        mDialog.progress = (100 * progress).toInt()
+                    }
+
+                    override fun onResponse(response: File?, id: Int) {
+                        // 下载完毕
+                        LogUtils.i(response?.path)
+                        mDialog.dismiss()
+                        val intent = Intent()
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        intent.addCategory(Intent.CATEGORY_DEFAULT)
+                        intent.action = Intent.ACTION_VIEW
+                        intent.setDataAndType(
+                            Uri.fromFile(response),
+                            "application/vnd.android.package-archive"
+                        )
+                        startActivity(intent)
+                    }
+
+                    override fun onError(call: okhttp3.Call?, e: Exception?, id: Int) {
+                        Log.e("下载失败", e.toString())
+                        ToastUtil.showShort(this@CMDActivity,"网络错误")
+                        mDialog.dismiss()
+                    }
+                })
+        }
+    }
+
+    fun saveCache(){
+        //保存到缓存
+        GlobalScope.launch(Dispatchers.IO) {
+            ACache.get(this@CMDActivity).clear()
+            ACache.get(this@CMDActivity)
+                .put(KEY_CACHE_LIST, Gson().toJson(models), 30 * ACache.TIME_DAY)
+        }
     }
 }
 
