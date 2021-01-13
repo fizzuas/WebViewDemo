@@ -5,29 +5,28 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.Window
+import android.view.*
 import androidx.fragment.app.DialogFragment
 import com.kydw.webviewdemo.R
+import com.kydw.webviewdemo.adapter.POSITION
 import com.kydw.webviewdemo.util.ToastUtil
+import kotlinx.android.synthetic.main.dialog_input.view.but_cancel
 import kotlinx.android.synthetic.main.dialog_input_site.view.*
 
 /**
  *@Author oyx
- *@date 2020/12/30 17:17
+ *@date 2021/1/13 16:33
  *@description
  */
-const val DIALOG_INPUT_SITE = "DIALOG_INPUT_SITE"
 
-class DialogInputSite : DialogFragment() {
-    private lateinit var listener: OnOKListener
+class Dialog2Site : DialogFragment(){
+    private lateinit var listener: OnSite2Listener
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        val position = arguments!!.getInt(POSITION)
         dialog!!.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         val view = inflater.inflate(R.layout.dialog_input_site, container, false)
         view.apply {
@@ -35,7 +34,7 @@ class DialogInputSite : DialogFragment() {
                 if (et_site_input.text.isEmpty()) {
                     ToastUtil.show(activity, "请输入网址")
                 } else {
-                    listener.onOK(et_site_input.text.toString())
+                    listener.onSite2OK(position,et_site_input.text.toString())
                     dismiss()
                 }
             }
@@ -62,11 +61,10 @@ class DialogInputSite : DialogFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        listener = context as OnOKListener
+        listener = context as OnSite2Listener
     }
 
-    interface OnOKListener {
-        fun onOK(site: String)
+    interface OnSite2Listener {
+        fun onSite2OK(position:Int,site: String)
     }
-
 }

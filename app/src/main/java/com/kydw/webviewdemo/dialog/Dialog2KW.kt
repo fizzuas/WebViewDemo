@@ -11,31 +11,34 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.fragment.app.DialogFragment
 import com.kydw.webviewdemo.R
+import com.kydw.webviewdemo.adapter.POSITION
 import com.kydw.webviewdemo.util.ToastUtil
-import kotlinx.android.synthetic.main.dialog_input_site.view.*
+import kotlinx.android.synthetic.main.dialog_input_kw.view.*
+
 
 /**
  *@Author oyx
- *@date 2020/12/30 17:17
+ *@date 2021/1/13 15:59
  *@description
  */
-const val DIALOG_INPUT_SITE = "DIALOG_INPUT_SITE"
-
-class DialogInputSite : DialogFragment() {
-    private lateinit var listener: OnOKListener
+class Dialog2KW() : DialogFragment() {
+    private lateinit var listener: OnKW2Listener
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        val position = arguments!!.getInt(POSITION)
         dialog!!.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        val view = inflater.inflate(R.layout.dialog_input_site, container, false)
+        val view = inflater.inflate(R.layout.dialog_input_kw, container, false)
         view.apply {
             view.but_ok.setOnClickListener {
-                if (et_site_input.text.isEmpty()) {
-                    ToastUtil.show(activity, "请输入网址")
+                if (et_site_input.text.isEmpty() || et_kw_input.text.isEmpty()) {
+                    ToastUtil.show(activity, "请输入关键词和网址")
                 } else {
-                    listener.onOK(et_site_input.text.toString())
+                    listener.onKW2OK(position,
+                        et_kw_input.text.toString(),
+                        et_site_input.text.toString())
                     dismiss()
                 }
             }
@@ -55,18 +58,17 @@ class DialogInputSite : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-
         val scale: Float = context!!.resources!!.displayMetrics!!.density
-        dialog!!.window!!.setLayout(280 * scale.toInt(), 126 * scale.toInt())
+        dialog!!.window!!.setLayout(350 * scale.toInt(), 180 * scale.toInt())
     }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        listener = context as OnOKListener
+        listener = context as OnKW2Listener
     }
 
-    interface OnOKListener {
-        fun onOK(site: String)
+    interface OnKW2Listener {
+        fun onKW2OK(position: Int, kw: String, site: String)
     }
 
 }

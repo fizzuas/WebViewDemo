@@ -87,18 +87,18 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun onTargetJumpSuc() {
-        var flag = false //一个关键字下请求有一个未请求到就为true
-        mKeyWords[mKeyWordIndex].second.forEach {
-            if (!it.isRequested) {
-                flag = true
-            }
-        }
-        if (flag) {
-            nextRequest()
-        } else {
-            nextKeyWord()
-        }
-
+//        var flag = false //一个关键字下请求有一个未请求到就为true
+//        mKeyWords[mKeyWordIndex].second.forEach {
+//            if (!it.isRequested) {
+//                flag = true
+//            }
+//        }
+//        if (flag) {
+//            nextRequest()
+//        } else {
+//            nextKeyWord()
+//        }
+        nextRequest()
     }
 
 

@@ -9,22 +9,23 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
+import com.chad.library.adapter.base.BaseQuickAdapter
+import com.chad.library.adapter.base.listener.OnItemClickListener
 import com.chad.library.adapter.base.listener.OnItemSwipeListener
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kydw.webviewdemo.*
-import com.kydw.webviewdemo.adapter.Model
-import com.kydw.webviewdemo.adapter.ModelAdapter
-import com.kydw.webviewdemo.dialog.DIALOG_INPUT_SITE
-import com.kydw.webviewdemo.dialog.DialogInput
-import com.kydw.webviewdemo.dialog.DialogInputSite
+import com.kydw.webviewdemo.adapter.*
+import com.kydw.webviewdemo.dialog.*
 import com.kydw.webviewdemo.network.UpdateService
 import com.kydw.webviewdemo.network.UploadFileInfo
 import com.kydw.webviewdemo.network.UploadFileResult
@@ -49,16 +50,15 @@ import java.io.File
 const val MyTag: String = "oyx"
 
 class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
-    DialogInputSite.OnOKListener {
+    DialogInputSite.OnOKListener, Dialog2KW.OnKW2Listener, Dialog2Site.OnSite2Listener {
     var models = mutableListOf<Model>(
-        Model("钥匙机", "www.kydz-wx.com"),
-        Model("钥匙机", "baike.baidu.com"),
-        Model("www.kydz-wx.com", "www.kydz-wx.com"),
-        Model("手机", "www.oneplus.com"),
-        Model("手机", "baike.baidu.com")
+//        Model("钥匙机", "www.kydz-wx.com"),
+//        Model("钥匙机", "baike.baidu.com"),
+//        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
+//        Model("手机", "www.oneplus.com"),
+//        Model("手机", "baike.baidu.com")
     )
 
-    //        var models = mutableListOf<Model>(Model("关键词", "网址"))
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
     private val mDialog: ProgressDialog by lazy { ProgressDialog(this) }
 
@@ -88,7 +88,6 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
             models.forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
             }
-
 
             intent.putExtra(KEYWORD_SITES, models.toTypedArray())
             val count = et_count.text.toString().toIntOrNull()
@@ -146,9 +145,13 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
             modelAdapter.setOnItemClickListener { _, view, position ->
                 Log.i(MyTag, models[position].toString())
             }
+
+
             adapter = modelAdapter
-            modelAdapter.draggableModule.isSwipeEnabled = true
-            modelAdapter.draggableModule.setOnItemSwipeListener(onItemSwipeListener)
+//            modelAdapter.draggableModule.isSwipeEnabled = true
+//            modelAdapter.draggableModule.setOnItemSwipeListener(onItemSwipeListener)
+
+
         }
         tv_version_name.text = "version:" + getAppVersionName(this)
 
@@ -169,7 +172,6 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
             }
         }
     }
-
 
 
     // 侧滑监听
@@ -197,6 +199,7 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
         ) {
             canvas.drawColor(ContextCompat.getColor(this@CMDActivity,
                 R.color.color_light_blue))
+
         }
     }
 
@@ -221,11 +224,6 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
         saveCache()
     }
 
-    override fun onOK(site: String) {
-        models.add(Model(site, site))
-        modelAdapter.notifyDataSetChanged()
-        saveCache()
-    }
 
     private fun checkUpdate() {
         LogUtils.i("checkUpdate")
@@ -327,20 +325,43 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
 
                     override fun onError(call: okhttp3.Call?, e: Exception?, id: Int) {
                         Log.e("下载失败", e.toString())
-                        ToastUtil.showShort(this@CMDActivity,"网络错误")
+                        ToastUtil.showShort(this@CMDActivity, "网络错误")
                         mDialog.dismiss()
                     }
                 })
         }
     }
 
-    fun saveCache(){
+    fun saveCache() {
         //保存到缓存
         GlobalScope.launch(Dispatchers.IO) {
             ACache.get(this@CMDActivity).clear()
             ACache.get(this@CMDActivity)
                 .put(KEY_CACHE_LIST, Gson().toJson(models), 30 * ACache.TIME_DAY)
         }
+    }
+
+
+    override fun onOK(site: String) {
+        models.add(Model(site, site, SITE))
+        modelAdapter.notifyDataSetChanged()
+        saveCache()
+    }
+
+    override fun onKW2OK(position: Int, kw: String, site: String) {
+        Log.e("oyx", "position=$position,\tKW=$kw,\tsite=$site")
+        models[position].keyword=kw
+        models[position].site=site
+        modelAdapter.notifyDataSetChanged()
+        saveCache()
+    }
+
+    override fun onSite2OK(position: Int, site: String) {
+        Log.e("oyx", "position=$position,\tsite$site")
+        models[position].keyword=site
+        models[position].site=site
+        modelAdapter.notifyDataSetChanged()
+        saveCache()
     }
 }
 
