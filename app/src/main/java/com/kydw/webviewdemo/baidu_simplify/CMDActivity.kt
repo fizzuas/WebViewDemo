@@ -55,7 +55,7 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
 //        Model("钥匙机", "www.kydz-wx.com"),
 //        Model("钥匙机", "baike.baidu.com"),
 //        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
-//        Model("手机", "www.oneplus.com"),
+//        Model("手机", "www.oneplus.com")
 //        Model("手机", "baike.baidu.com")
     )
 

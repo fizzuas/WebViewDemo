@@ -4,14 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import android.os.*
 import android.util.Log
 import android.view.MotionEvent
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
-import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import com.kydw.webviewdemo.*
@@ -25,6 +22,7 @@ import com.tencent.smtt.export.external.interfaces.SslError
 import com.tencent.smtt.export.external.interfaces.SslErrorHandler
 import com.tencent.smtt.sdk.*
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_main.content
 import kotlinx.coroutines.*
 import java.io.File
 import java.lang.StringBuilder
@@ -39,12 +37,12 @@ const val CHECK_TIME_INTERVAL = 5 * 60 * 1000L
 class WebActivity : AppCompatActivity() {
 
     var isDealingWebError = false
-    lateinit var webview: WebView
     var mCircleCount = 1
     var mCircleIndex = 1
+    var stoped = false
 
     val isRoot = true
-    private var mLoadingDbDialog: JAlertDialog? = null
+    private var mLoadingSwitchFlyDialog: JAlertDialog? = null
     private var mLoadingCheckNetDialog: JAlertDialog? = null
 
     private val obj = InJavaScriptLocalObj(this)
@@ -103,6 +101,9 @@ class WebActivity : AppCompatActivity() {
 
 
     private fun checkWebUpdate() {
+        if(stoped){
+            return
+        }
         val curTime = Date().time
         val lastTime = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .getLong(KEY_LOAD_PAGE_TIME, curTime)
@@ -127,7 +128,7 @@ class WebActivity : AppCompatActivity() {
                         JAlertDialog.Builder(this@WebActivity)
                             .setContentView(R.layout.dialog_waiting_net)
                             .setText(R.id.content, if (count > 100) "请检查4G卡是否有流量" else "网络已断开...")
-                            .setWidth_Height_dp(300, 120).setCancelable(isRoot)
+                            .setWidth_Height_dp(300, 120).setCancelable(false)
                             .create()
                 }
                 mLoadingCheckNetDialog?.show()
@@ -168,13 +169,13 @@ class WebActivity : AppCompatActivity() {
 
     private fun nextKeyWord() {
         //切换IP
-        if (mLoadingDbDialog == null) {
-            mLoadingDbDialog =
+        if (mLoadingSwitchFlyDialog == null) {
+            mLoadingSwitchFlyDialog =
                 JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
-                    .setWidth_Height_dp(300, 120).setCancelable(isRoot)
+                    .setWidth_Height_dp(300, 120).setCancelable(false)
                     .create()
         }
-        mLoadingDbDialog?.show()
+        mLoadingSwitchFlyDialog?.show()
 
         // switchIP
         GlobalScope.launch(Dispatchers.IO) {
@@ -209,7 +210,7 @@ class WebActivity : AppCompatActivity() {
             }
             delay(2000)
             withContext(Dispatchers.Main) {
-                mLoadingDbDialog?.hide()
+                mLoadingSwitchFlyDialog?.hide()
                 if (mKeyWordIndex < mKeyWords.lastIndex) {
                     mKeyWordIndex++
                     webview.loadUrl(baiduIndexUrl)
@@ -237,7 +238,7 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun nextCircle() {
-        mLoadingDbDialog?.dismiss()
+        mLoadingSwitchFlyDialog?.dismiss()
         mKeyWordIndex = 0
         mKeyWords.forEach {
             it.second.forEach {
@@ -312,10 +313,11 @@ class WebActivity : AppCompatActivity() {
 
         initData(intent)
 
-        webview = WebView(applicationContext)
-        val lp = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        webview.layoutParams = lp
-        content.addView(webview)
+//        webview = WebView(applicationContext)
+//        val lp = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+//        webview.layoutParams = lp
+//        content.addView(webview)
+
 
         webview.webViewClient = object : WebViewClient() {
 //            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
@@ -345,6 +347,9 @@ class WebActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                if (stoped) {
+                    return
+                }
                 Log.i(MyTag, TAG_CHECK + "progress=" + view!!.progress)
 
                 view.loadUrl(
@@ -381,7 +386,7 @@ class WebActivity : AppCompatActivity() {
                     }
                     view.loadUrl("javascript:$jsLook")
                 } else if (url.contains("baidu.com")) {
-                    Log.e(TAG, "百度搜索页面加载=$url")
+                    Log.e(TAG, "百度搜索后首页加载=$url")
                     if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
                         //验证码
                         Log.e(MyTag, "发现验证码界面加载$url")
@@ -429,6 +434,26 @@ class WebActivity : AppCompatActivity() {
         setWebView(webview)
         webview.loadUrl(baiduIndexUrl)
         webview.keepScreenOn = true
+
+        but_stop.setOnClickListener {
+            stoped=true
+            webview.reload()
+//            webview.reload()
+//            if (stoped) {
+//                //点击了继续
+//                but.text = "暂停"
+//            } else {
+//                //点击了暂停
+//                but.text = "正在暂停..."
+//                webview.reload()
+//            }
+//            stoped = !stoped
+        }
+        but_go.setOnClickListener {
+            stoped=false
+            webview.reload()
+        }
+
 
         //循环检查网页
         val runnable = object : Runnable {

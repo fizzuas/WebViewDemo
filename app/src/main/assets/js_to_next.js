@@ -35,6 +35,7 @@ function clickToTarget() {
   };
 }
 
+
 var curTime = new Date().toLocaleString();
 console.log(curTime);
 var logBack = "";
@@ -67,7 +68,9 @@ if (pageNo.length == 0) {
         site
     );
    for (let k in targetSites) {
-        if (targetSites[k] == site) {
+   var m=site.search(targetSites[k]);
+     console.log("\tsearch="+m);
+        if (m!=-1) {
           targetEleA = scTitles[i];
         }
       }
@@ -98,7 +101,9 @@ if (pageNo.length == 0) {
         site
     );
      for (let k in targetSites) {
-          if (site == targetSites[k]) {
+     var m=site.search(targetSites[k]);
+       console.log("\tsearch="+m);
+          if (m!=-1) {
             targetEleA = resultTitles[i];
           }
       }
@@ -110,8 +115,10 @@ if (pageNo.length == 0) {
     time = time + randomNum(300,1250);
   }
   for (i = 0; i < resultTitles.length; i++) {
-    setTimeout(scrollTo(scTitles[i]), time);
-    time = time + randomNum(300,1250);
+  if(scTitles[i]!=null){
+     setTimeout(scrollTo(scTitles[i]), time);
+      time = time + randomNum(300,1250);
+  }
   }
   if (targetEleA == null) {
     /* 滑到nextonly 点击 */
@@ -163,7 +170,9 @@ if (pageNo.length == 0) {
     );
 
        for (let k in targetSites) {
-          if (site == targetSites[k]) {
+        var m=site.search(targetSites[k]);
+         console.log("\tsearch="+m);
+          if (m!=-1) {
           console.log("\t 点击 site;\n"+site);
             targetEleA = rssultTitles[i];
           }
