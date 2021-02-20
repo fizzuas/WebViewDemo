@@ -51,6 +51,7 @@ class WebActivity : AppCompatActivity() {
     val mKeyWords =
         mutableListOf<Pair<String, MutableList<TUrl>>>()
     var mKeyWordIndex = 0
+    var mLatestLookedUrl=""
 
     val handler = MyHandler(this)
 
@@ -64,7 +65,7 @@ class WebActivity : AppCompatActivity() {
             val activity = mActivity.get()
             when (msg.what) {
                 MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT -> {
-                    //次 页not  found，或者搜索满页， 下一个循环
+                    //次 页not  found，或者搜索满页， 下一个关键词
                     activity?.nextKeyWord()
                 }
                 MSG_TARGET_JUMP_SUC -> {
@@ -361,7 +362,7 @@ class WebActivity : AppCompatActivity() {
                 val keyWord = mKeyWords[mKeyWordIndex].first
                 val siteInfo = mKeyWords[mKeyWordIndex].second
 
-                if (url.equals(baiduIndexUrl)) {
+                if (url == baiduIndexUrl) {
                     Log.e(TAG, "百度首页=" + url)
                     //首页，提交表单
                     val jsForm =
@@ -379,6 +380,7 @@ class WebActivity : AppCompatActivity() {
                     siteInfo.forEach {
                         if (url.contains(it.url)) {
                             it.isRequested = true
+                            mLatestLookedUrl=it.url
                         }
                     }
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
@@ -406,7 +408,7 @@ class WebActivity : AppCompatActivity() {
                         val jsList = StringBuilder()
                         jsList.append("[")
                         for (i in siteInfo.indices) {
-                            if (!siteInfo[i].isRequested) {
+                            if (siteInfo[i].url!=mLatestLookedUrl) {
                                 jsList.append("\"${siteInfo[i].url}\",")
                             }
                         }
@@ -414,6 +416,8 @@ class WebActivity : AppCompatActivity() {
                         val head = "var targetSites=$jsList;"
                         Log.e(MyTag, "jsList head=" + head)
                         view.loadUrl("javascript:$head$jsToNext")
+                        mLatestLookedUrl=""
+
                     }
                 }
 

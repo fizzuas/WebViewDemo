@@ -9,16 +9,12 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
-import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
-import com.chad.library.adapter.base.BaseQuickAdapter
-import com.chad.library.adapter.base.listener.OnItemClickListener
 import com.chad.library.adapter.base.listener.OnItemSwipeListener
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
 import com.google.gson.Gson
@@ -49,20 +45,27 @@ import java.io.File
 
 const val MyTag: String = "oyx"
 
-class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
-    DialogInputSite.OnOKListener, Dialog2KW.OnKW2Listener, Dialog2Site.OnSite2Listener {
+class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener,
+    DialogInputSite.OnOKListener, DialogEditKW.OnKW2Listener, DialogEditSite.OnSite2Listener {
     var models = mutableListOf<Model>(
-//        Model("钥匙机", "www.kydz-wx.com"),
+//        Model("钥匙机", "www.kydz-wx.com")
 //        Model("钥匙机", "baike.baidu.com"),
 //        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
 //        Model("手机", "www.oneplus.com")
-//        Model("手机", "baike.baidu.com")
+//        Model("vt.thaniyaa.com", "vt.thaniyaa.com", SITE),
+//        Model("vv.thaniyaa.com", "vv.thaniyaa.com", SITE),
+//        Model("kk.pewdo.com", "kk.pewdo.com", SITE),
+//        Model("1c.pewdo.com", "1c.pewdo.com", SITE),
+//        Model("2c.pewdo.com", "2c.pewdo.com", SITE),
+//        Model("3c.pewdo.com", "3c.pewdo.com", SITE),
+//        Model("4c.pewdo.com", "4c.pewdo.com", SITE),
+//        Model("5c.pewdo.com", "5c.pewdo.com", SITE)
     )
 
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
     private val mDialog: ProgressDialog by lazy { ProgressDialog(this) }
 
-    private val mDialogInput: DialogInput = DialogInput()
+    private val mDialogAddKeySite: DialogAddKeySite = DialogAddKeySite()
     private val mStartDialog: DialogInputSite = DialogInputSite()
     var intentFilter = IntentFilter("android.intent.action.AIRPLANE_MODE")
 
@@ -84,6 +87,7 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
 
         registerReceiver(receiver, intentFilter)
         but_tonext.setOnClickListener {
+            saveCache()
             val intent = Intent(this, WebActivity::class.java)
             models.forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
@@ -128,16 +132,14 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
             val isOn = NetState.hasNetWorkConnection(this)
             Log.e(MyTag, "isON" + isOn + ";statue" + statue)
             if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
-
                 startActivity(intent)
-
             } else {
                 ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
             }
         }
 
         but_addkw.setOnClickListener {
-            mDialogInput.show(supportFragmentManager, DIALOG_INPUT)
+            mDialogAddKeySite.show(supportFragmentManager, DIALOG_INPUT)
         }
 
         recy_configs.apply {
@@ -215,14 +217,6 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
         unregisterReceiver(receiver)
     }
 
-    override fun onConfirm(kw: String, sites: MutableList<String>) {
-        Log.i(MyTag, "kw" + kw + ",sites" + sites.toString())
-        sites.forEach {
-            models.add(Model(kw, it))
-        }
-        modelAdapter.notifyDataSetChanged()
-        saveCache()
-    }
 
 
     private fun checkUpdate() {
@@ -342,26 +336,30 @@ class CMDActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener,
     }
 
 
-    override fun onOK(site: String) {
+    override fun onAddSiteOk(site: String) {
         models.add(Model(site, site, SITE))
         modelAdapter.notifyDataSetChanged()
-        saveCache()
     }
 
-    override fun onKW2OK(position: Int, kw: String, site: String) {
+    override fun onEditKWOK(position: Int, kw: String, site: String) {
         Log.e("oyx", "position=$position,\tKW=$kw,\tsite=$site")
         models[position].keyword=kw
         models[position].site=site
         modelAdapter.notifyDataSetChanged()
-        saveCache()
     }
 
-    override fun onSite2OK(position: Int, site: String) {
+    override fun onEditSiteOK(position: Int, site: String) {
         Log.e("oyx", "position=$position,\tsite$site")
         models[position].keyword=site
         models[position].site=site
         modelAdapter.notifyDataSetChanged()
-        saveCache()
+    }
+    override fun onAddKeySiteConfirm(kw: String, sites: MutableList<String>) {
+        Log.i(MyTag, "kw" + kw + ",sites" + sites.toString())
+        sites.forEach {
+            models.add(Model(kw, it))
+        }
+        modelAdapter.notifyDataSetChanged()
     }
 }
 

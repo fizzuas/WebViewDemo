@@ -9,9 +9,10 @@ import android.view.*
 import androidx.fragment.app.DialogFragment
 import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.adapter.POSITION
+import com.kydw.webviewdemo.adapter.VALUE_SITE
 import com.kydw.webviewdemo.util.ToastUtil
-import kotlinx.android.synthetic.main.dialog_input.view.but_cancel
-import kotlinx.android.synthetic.main.dialog_input_site.view.*
+import kotlinx.android.synthetic.main.dialog_add_key_site.view.but_cancel
+import kotlinx.android.synthetic.main.dialog_add_site.view.*
 
 /**
  *@Author oyx
@@ -19,7 +20,7 @@ import kotlinx.android.synthetic.main.dialog_input_site.view.*
  *@description
  */
 
-class Dialog2Site : DialogFragment(){
+class DialogEditSite : DialogFragment(){
     private lateinit var listener: OnSite2Listener
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -27,14 +28,18 @@ class Dialog2Site : DialogFragment(){
         savedInstanceState: Bundle?
     ): View? {
         val position = arguments!!.getInt(POSITION)
+        val site = arguments!!.getString(VALUE_SITE)
         dialog!!.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        val view = inflater.inflate(R.layout.dialog_input_site, container, false)
+        val view = inflater.inflate(R.layout.dialog_add_site, container, false)
         view.apply {
+            if(site!=null){
+                et_site_input.setText(site)
+            }
             view.but_ok.setOnClickListener {
                 if (et_site_input.text.isEmpty()) {
                     ToastUtil.show(activity, "请输入网址")
                 } else {
-                    listener.onSite2OK(position,et_site_input.text.toString())
+                    listener.onEditSiteOK(position,et_site_input.text.toString())
                     dismiss()
                 }
             }
@@ -65,6 +70,6 @@ class Dialog2Site : DialogFragment(){
     }
 
     interface OnSite2Listener {
-        fun onSite2OK(position:Int,site: String)
+        fun onEditSiteOK(position:Int, site: String)
     }
 }

@@ -130,11 +130,20 @@ if (pageNo.length == 0) {
       time += randomNum(300,1250);
       setTimeout(clickHref(nextOnlys[0]), time);
     } else {
-      /*有可能是百度后第一页找不到问题，更有可能，非下一页作用了这个js*/
-      logBack += "not found 下一页节点";
-      console.log("not found 下一页节点");
-      window.java_obj.saveLog(logBack);
-      /*window.java_obj.requestFinished();*/
+      /*结果第一页找不到关键词结果清醒 或者 中间页*/
+       var bnNodes = document.getElementsByClassName("bn");
+       console.log("bnNodes.length=="+bnNodes.length);
+       if(bnNodes.length>0){
+       /*结果第一页 关键词找不到结果*/
+      window.java_obj.requestFinished();
+       }else{
+       /*非结果页，可能是中间跳转页*/
+       console.log("非百度一下后正常结果页");
+       }
+             logBack += "not found 下一页节点";
+             console.log("not found 下一页节点");
+             window.java_obj.saveLog(logBack);
+
     }
   } else {
     time += randomNum(300,1250);

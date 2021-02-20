@@ -21,19 +21,19 @@ import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.adapter.Model
 import com.kydw.webviewdemo.adapter.ModelAdapter
 import com.kydw.webviewdemo.baidu_simplify.MyTag
-import com.kydw.webviewdemo.dialog.DialogInput
+import com.kydw.webviewdemo.dialog.DialogAddKeySite
 import com.kydw.webviewdemo.dialog.JAlertDialog
 import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import kotlinx.android.synthetic.main.activity_c_m_d_browser.*
 
-class CMDBrowserActivity : AppCompatActivity(), DialogInput.OnConfirmClickListener {
+class CMDBrowserActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener {
     var models = mutableListOf<Model>(Model("关键词", "网址"), Model("钥匙机", "www.kydz-wx.com"))
 
     //        var models = mutableListOf<Model>(Model("关键词", "网址"))
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
 
-    private val mDialogInput: DialogInput = DialogInput()
+    private val mDialogAddKeySite: DialogAddKeySite = DialogAddKeySite()
     private var mLoadingDbDialog: JAlertDialog? = null
 
     var intentFilter = IntentFilter("android.intent.action.AIRPLANE_MODE")
@@ -106,7 +106,7 @@ class CMDBrowserActivity : AppCompatActivity(), DialogInput.OnConfirmClickListen
         }
 
         but_addkw.setOnClickListener {
-            mDialogInput.show(supportFragmentManager, DIALOG_INPUT)
+            mDialogAddKeySite.show(supportFragmentManager, DIALOG_INPUT)
         }
 
         recy_configs.apply {
@@ -161,7 +161,7 @@ class CMDBrowserActivity : AppCompatActivity(), DialogInput.OnConfirmClickListen
         unregisterReceiver(receiver)
     }
 
-    override fun onConfirm(kw: String, sites: MutableList<String>) {
+    override fun onAddKeySiteConfirm(kw: String, sites: MutableList<String>) {
         Log.i(MyTag, "kw" + kw + ",sites" + sites.toString())
         sites.forEach {
             models.add(Model(kw, it))

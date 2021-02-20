@@ -11,7 +11,9 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.fragment.app.DialogFragment
 import com.kydw.webviewdemo.R
+import com.kydw.webviewdemo.adapter.KEY
 import com.kydw.webviewdemo.adapter.POSITION
+import com.kydw.webviewdemo.adapter.VALUE_SITE
 import com.kydw.webviewdemo.util.ToastUtil
 import kotlinx.android.synthetic.main.dialog_input_kw.view.*
 
@@ -21,7 +23,7 @@ import kotlinx.android.synthetic.main.dialog_input_kw.view.*
  *@date 2021/1/13 15:59
  *@description
  */
-class Dialog2KW() : DialogFragment() {
+class DialogEditKW() : DialogFragment() {
     private lateinit var listener: OnKW2Listener
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -29,14 +31,22 @@ class Dialog2KW() : DialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         val position = arguments!!.getInt(POSITION)
+        val key=arguments!!.getString(KEY)
+        val valueSite=arguments!!.getString(VALUE_SITE)
         dialog!!.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         val view = inflater.inflate(R.layout.dialog_input_kw, container, false)
         view.apply {
+            if(key!=null){
+                view.et_kw_input.setText(key)
+            }
+            if(valueSite!=null){
+                view.et_site_input.setText(valueSite)
+            }
             view.but_ok.setOnClickListener {
                 if (et_site_input.text.isEmpty() || et_kw_input.text.isEmpty()) {
                     ToastUtil.show(activity, "请输入关键词和网址")
                 } else {
-                    listener.onKW2OK(position,
+                    listener.onEditKWOK(position,
                         et_kw_input.text.toString(),
                         et_site_input.text.toString())
                     dismiss()
@@ -68,7 +78,7 @@ class Dialog2KW() : DialogFragment() {
     }
 
     interface OnKW2Listener {
-        fun onKW2OK(position: Int, kw: String, site: String)
+        fun onEditKWOK(position: Int, kw: String, site: String)
     }
 
 }

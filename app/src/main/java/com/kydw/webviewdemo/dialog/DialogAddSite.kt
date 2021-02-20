@@ -12,7 +12,7 @@ import android.view.Window
 import androidx.fragment.app.DialogFragment
 import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.util.ToastUtil
-import kotlinx.android.synthetic.main.dialog_input_site.view.*
+import kotlinx.android.synthetic.main.dialog_add_site.view.*
 
 /**
  *@Author oyx
@@ -29,13 +29,14 @@ class DialogInputSite : DialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         dialog!!.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        val view = inflater.inflate(R.layout.dialog_input_site, container, false)
+        val view = inflater.inflate(R.layout.dialog_add_site, container, false)
         view.apply {
             view.but_ok.setOnClickListener {
                 if (et_site_input.text.isEmpty()) {
                     ToastUtil.show(activity, "请输入网址")
                 } else {
-                    listener.onOK(et_site_input.text.toString())
+                    listener.onAddSiteOk(et_site_input.text.toString())
+                    view.et_site_input.setText("")
                     dismiss()
                 }
             }
@@ -66,7 +67,7 @@ class DialogInputSite : DialogFragment() {
     }
 
     interface OnOKListener {
-        fun onOK(site: String)
+        fun onAddSiteOk(site: String)
     }
 
 }

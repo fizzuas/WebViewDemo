@@ -8,12 +8,14 @@ import com.chad.library.adapter.base.BaseQuickAdapter
 import com.chad.library.adapter.base.module.DraggableModule
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
 import com.kydw.webviewdemo.R
-import com.kydw.webviewdemo.dialog.Dialog2KW
-import com.kydw.webviewdemo.dialog.Dialog2Site
+import com.kydw.webviewdemo.dialog.DialogEditKW
+import com.kydw.webviewdemo.dialog.DialogEditSite
 
 const val DIALOG_INPUT_SITE_ADAPTER = "DIALOG_INPUT_SITE_ADAPTER"
 const val DIALOG_INPUT_KW_ADAPTER = "DIALOG_INPUT_KW_ADAPTER"
 const val POSITION = "POSITION"
+const val KEY = "KEY"
+const val VALUE_SITE = "VALUE_SITE"
 
 class ModelAdapter(data: MutableList<Model>) :
     BaseQuickAdapter<Model, BaseViewHolder>(R.layout.item_model, data = data), DraggableModule {
@@ -29,18 +31,21 @@ class ModelAdapter(data: MutableList<Model>) :
         holder.getView<TextView>(R.id.right_menu_edit).setOnClickListener {
             Log.e("oyx", "type=" + data[holder.layoutPosition].type.toString());
             if (data[holder.layoutPosition].type == KEYWORD_SITE) {
-                val dialogSite2: Dialog2KW = Dialog2KW()
+                val dialogSiteEdit: DialogEditKW = DialogEditKW()
                 val bundle = Bundle()
                 bundle.putInt(POSITION, holder.layoutPosition)
-                dialogSite2.arguments = bundle
-                dialogSite2.show((context as FragmentActivity).supportFragmentManager,
+                bundle.putString(KEY,item.keyword)
+                bundle.putString(VALUE_SITE,item.site)
+                dialogSiteEdit.arguments = bundle
+                dialogSiteEdit.show((context as FragmentActivity).supportFragmentManager,
                     DIALOG_INPUT_SITE_ADAPTER)
             } else {
-                val dialogKW2: Dialog2Site = Dialog2Site()
+                val dialogKWEdit: DialogEditSite = DialogEditSite()
                 val bundle = Bundle()
                 bundle.putInt(POSITION, holder.layoutPosition)
-                dialogKW2.arguments = bundle
-                dialogKW2.show((context as FragmentActivity).supportFragmentManager,
+                bundle.putString(VALUE_SITE,item.keyword)
+                dialogKWEdit.arguments = bundle
+                dialogKWEdit.show((context as FragmentActivity).supportFragmentManager,
                     DIALOG_INPUT_KW_ADAPTER)
             }
 

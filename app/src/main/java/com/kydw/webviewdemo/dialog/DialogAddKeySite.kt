@@ -12,10 +12,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.kydw.webviewdemo.R
 import com.kydw.webviewdemo.adapter.SitesAdapter
 import com.kydw.webviewdemo.util.ToastUtil
-import kotlinx.android.synthetic.main.dialog_input.view.*
+import kotlinx.android.synthetic.main.dialog_add_key_site.view.*
 
 
-class DialogInput : DialogFragment(), SitesAdapter.OnSiteClickListener {
+class DialogAddKeySite : DialogFragment(), SitesAdapter.OnSiteClickListener {
     private val sites = mutableListOf<String>("")
     private val siteAdapter: SitesAdapter = SitesAdapter(sites, this)
     private lateinit var listener: OnConfirmClickListener
@@ -27,13 +27,13 @@ class DialogInput : DialogFragment(), SitesAdapter.OnSiteClickListener {
     ): View? {
 
         dialog!!.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        val view = inflater.inflate(R.layout.dialog_input, container, false)
+        val view = inflater.inflate(R.layout.dialog_add_key_site, container, false)
         view.apply {
             view.but_cancel.setOnClickListener { dialog!!.cancel() }
             view.but_confirm.setOnClickListener {
                 val kw = view?.et_kw_input?.text.toString()
                 if (kw != null && kw.isNotEmpty() || (sites.size == 1 && sites[0].isEmpty())) {
-                    listener.onConfirm(et_kw_input.text.toString(), sites)
+                    listener.onAddKeySiteConfirm(et_kw_input.text.toString(), sites)
                     dialog!!.cancel()
                 } else {
                     ToastUtil.show(context, "请输入关键词和网址")
@@ -77,7 +77,7 @@ class DialogInput : DialogFragment(), SitesAdapter.OnSiteClickListener {
     }
 
     interface OnConfirmClickListener {
-        fun onConfirm(kw: String, sites: MutableList<String>)
+        fun onAddKeySiteConfirm(kw: String, sites: MutableList<String>)
     }
 
     override fun afterTextChanged(s: String, position: Int) {
