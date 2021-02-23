@@ -30,7 +30,7 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.lang.ref.WeakReference
 
-class WebBrowserActivity : AppCompatActivity() {
+class WebSouGouActivity : AppCompatActivity() {
 
     lateinit var webview: WebView
     var mCircleCount = 1
@@ -40,7 +40,9 @@ class WebBrowserActivity : AppCompatActivity() {
     private var mLoadingDbDialog: JAlertDialog? = null
 
     private val obj = InJavaScriptLocalObj(this)
-    val baiduIndexUrl = "https://www.baidu.com/"
+    val sougouIndexUrl = "https://wap.sogou.com/"
+    var testUrl="https://wap.sogou.com/web/searchList.jsp?keyword=钥匙机&suguuid=f2238415-fcc1-4b3b-83c2-a199012224e7&sugsuv=AAEcfEmDNAAAAAqHQGjNpQEA1wA&sugtime=1614054414104"
+
 
 
     val mKeyWords =
@@ -53,8 +55,8 @@ class WebBrowserActivity : AppCompatActivity() {
 
     val handler = MyHandler(this)
 
-    class MyHandler(activity: WebBrowserActivity) : Handler() {
-        private val mActivity: WeakReference<WebBrowserActivity> = WeakReference(activity)
+    class MyHandler(activity: WebSouGouActivity) : Handler() {
+        private val mActivity: WeakReference<WebSouGouActivity> = WeakReference(activity)
 
         override fun handleMessage(msg: Message) {
             if (mActivity.get() == null) {
@@ -81,7 +83,7 @@ class WebBrowserActivity : AppCompatActivity() {
     fun request() {
         if (mRequestIndex < mKeyWords.size) {
             //单次循环一个请求结束
-            webview.loadUrl(baiduIndexUrl)
+            webview.loadUrl(sougouIndexUrl)
         } else {
             //一个循环结束
             if (mCircleCount == 0) {
@@ -129,13 +131,13 @@ class WebBrowserActivity : AppCompatActivity() {
             delay(2000)
 
             for (i in 1..60) {
-                if (NetState.hasNetWorkConnection(this@WebBrowserActivity) && isOnline()) {
+                if (NetState.hasNetWorkConnection(this@WebSouGouActivity) && isOnline()) {
                     val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
                     if (result1?.successMsg != null) {
                         Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
                         appendFile(result1.successMsg + "\n\n",
                             getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
-                            this@WebBrowserActivity)
+                            this@WebSouGouActivity)
                     }
                     break
                 } else {
@@ -148,7 +150,7 @@ class WebBrowserActivity : AppCompatActivity() {
                 mLoadingDbDialog?.dismiss()
                 mRequestIndex = 0
                 clearCache()
-                webview.loadUrl(baiduIndexUrl)
+                webview.loadUrl(sougouIndexUrl)
             }
         }
     }
@@ -214,52 +216,59 @@ class WebBrowserActivity : AppCompatActivity() {
                 val keyWord = mKeyWords[mRequestIndex].first
                 val siteInfo = mKeyWords[mRequestIndex].second
 
-                if (url == baiduIndexUrl) {
+                if (url == sougouIndexUrl) {
                     //首页，提交表单
                     Log.i(MyTag, "keyword$keyWord")
                     Log.i(MyTag, "siteInfo$siteInfo")
                     //首页，提交表单
                     val jsForm =
-                        application.assets.open("js_bd_2second.js").bufferedReader().use {
+                        application.assets.open("sougou/js_index.js").bufferedReader().use {
                             it.readText()
                         }
                     Log.i(MyTag, "keyword$keyWord")
                     Log.i(MyTag, "siteInfo$siteInfo")
                     val head = "var keyword=\"$keyWord\";"
                     view.loadUrl("javascript:$head$jsForm")
-                    GlobalScope.launch {
-                        delay(200)
-                        val result = ShellUtils.execTap(880, 585)
-                        Log.i(MyTag, "tap result==" + result.toString())
-                    }
+//                    GlobalScope.launch {
+//                        delay(200)
+//                        val result = ShellUtils.execTap(880, 585)
+//                        Log.i(MyTag, "tap result==" + result.toString())
+//                    }
 
-                } else if (url.contains(siteInfo)) {
-                    Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "目标页加载成功=$url")
-                    val jsLook = application.assets.open("js_look.js").bufferedReader().use {
+                }else if(url.startsWith("https://wap.sogou.com/web/searchList.jsp")){
+                    val jsToClickNext=application.assets.open("sougou/js_next_page.js").bufferedReader().use {
                         it.readText()
                     }
-                    view.loadUrl("javascript:$jsLook")
-                } else if (url.contains("baidu.com")) {
-                    Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "百度搜索页面=$url")
-                    if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
-                        //验证码
-                        Log.e(MyTag, "发现验证码界面" + url)
-                        val jsSwipe =
-                            application.assets.open("js_swipe_vc_by_cb.js").bufferedReader().use {
-                                it.readText()
-                            }
-                        view.loadUrl("javascript:$jsSwipe")
-                    } else {
-                        Log.e(MyTag, "发现下一页" + url)
-                        //Next 页
-                        val jsToNext =
-                            application.assets.open("js_to_next.js").bufferedReader().use {
-                                it.readText()
-                            }
-                        val head = "var targetSite = \"$siteInfo\";"
-                        view.loadUrl("javascript:$head$jsToNext")
-                    }
+                    view.loadUrl("javascript:$jsToClickNext")
                 }
+//
+//                else if (url.contains(siteInfo)) {
+//                    Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "目标页加载成功=$url")
+//                    val jsLook = application.assets.open("js_look.js").bufferedReader().use {
+//                        it.readText()
+//                    }
+//                    view.loadUrl("javascript:$jsLook")
+//                } else if (url.contains("baidu.com")) {
+//                    Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "百度搜索页面=$url")
+//                    if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
+//                        //验证码
+//                        Log.e(MyTag, "发现验证码界面" + url)
+//                        val jsSwipe =
+//                            application.assets.open("js_swipe_vc_by_cb.js").bufferedReader().use {
+//                                it.readText()
+//                            }
+//                        view.loadUrl("javascript:$jsSwipe")
+//                    } else {
+//                        Log.e(MyTag, "发现下一页" + url)
+//                        //Next 页
+//                        val jsToNext =
+//                            application.assets.open("js_to_next.js").bufferedReader().use {
+//                                it.readText()
+//                            }
+//                        val head = "var targetSite = \"$siteInfo\";"
+//                        view.loadUrl("javascript:$head$jsToNext")
+//                    }
+//                }
                 super.onPageFinished(view, url)
             }
 
@@ -319,10 +328,8 @@ class WebBrowserActivity : AppCompatActivity() {
 
 //        webSettings.userAgentString = "User-Agent:Android"
 
-        //Android	OPPO A11	手机百度
         webSettings.userAgentString =
-            "Mozilla/5.0 (Linux; Android 10; PCHM10 Build/QKQ1.200209.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/76.0.3809.89 Mobile Safari/537.36 T7/12.5 SP-engine/2.26.0 baiduboxapp/12.5.0.11 (Baidu; P1 10) NABar/1.0"
-
+"Mozilla/5.0 (Linux; Android 9.0; 4G Build/MRA58K; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/56.0.2924.116 Mobile Safari/537.36 SogouMSE,SogouMobileBrowser/5.17.73"
     }
 
     override fun onBackPressed() {
@@ -367,10 +374,10 @@ class WebBrowserActivity : AppCompatActivity() {
 private class InJavaScriptLocalObj(val context: Context) {
     @JavascriptInterface
     fun showSource(html: String, url: String) {
-        Log.i(MyTag, "showSource")
+        Log.i(MyTag, "showSource    "+context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls_sougou_browser.txt")
         appendFile(
             "\n" + "url=" + url + "\n" + html + "\n",
-            context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls_browser.txt",
+            context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls_sougou_browser.txt",
             context
         )
     }
@@ -401,7 +408,7 @@ private class InJavaScriptLocalObj(val context: Context) {
         Log.i(TAG, "finish")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
-            (context as WebBrowserActivity).handler.sendEmptyMessage(1)
+            (context as WebSouGouActivity).handler.sendEmptyMessage(1)
         }
     }
 

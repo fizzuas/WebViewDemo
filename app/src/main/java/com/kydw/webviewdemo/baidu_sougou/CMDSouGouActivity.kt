@@ -27,7 +27,7 @@ import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import kotlinx.android.synthetic.main.activity_c_m_d_browser.*
 
-class CMDBrowserActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener {
+class CMDSouGouActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener {
     var models = mutableListOf<Model>(Model("关键词", "网址"), Model("钥匙机", "www.kydz-wx.com"))
 
     //        var models = mutableListOf<Model>(Model("关键词", "网址"))
@@ -55,7 +55,7 @@ class CMDBrowserActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickL
 
         registerReceiver(receiver, intentFilter)
         but_tonext.setOnClickListener {
-            val intent = Intent(this, WebBrowserActivity::class.java)
+            val intent = Intent(this, WebSouGouActivity::class.java)
             models.subList(1, models.size).forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
             }
@@ -75,19 +75,19 @@ class CMDBrowserActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickL
             }
 
             //root permission
-            if (!ShellUtils.checkRootPermission()) {
-                AlertDialog.Builder(this).setTitle("请给应用授予root权限：")
-                    .setMessage("操作：" +
-                            "点击root权限通知 或者\n" +
-                            "设置->授权管理->Root权限管理->打开${appName(this)}权限").setCancelable(true)
-                    .setPositiveButton("确定", object : DialogInterface.OnClickListener {
-                        override fun onClick(dialog: DialogInterface?, which: Int) {
-                            startActivity(Intent(Settings.ACTION_SETTINGS));//直接跳转到设置界面
-                        }
-                    })
-                    .create().show()
-                return@setOnClickListener
-            }
+//            if (!ShellUtils.checkRootPermission()) {
+//                AlertDialog.Builder(this).setTitle("请给应用授予root权限：")
+//                    .setMessage("操作：" +
+//                            "点击root权限通知 或者\n" +
+//                            "设置->授权管理->Root权限管理->打开${appName(this)}权限").setCancelable(true)
+//                    .setPositiveButton("确定", object : DialogInterface.OnClickListener {
+//                        override fun onClick(dialog: DialogInterface?, which: Int) {
+//                            startActivity(Intent(Settings.ACTION_SETTINGS));//直接跳转到设置界面
+//                        }
+//                    })
+//                    .create().show()
+//                return@setOnClickListener
+//            }
 
             // sd permission
             if (!PermissionUtil.hasRequiredPermissions(this)) {
@@ -145,7 +145,7 @@ class CMDBrowserActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickL
             dY: Float,
             isCurrentlyActive: Boolean
         ) {
-            canvas.drawColor(ContextCompat.getColor(this@CMDBrowserActivity,
+            canvas.drawColor(ContextCompat.getColor(this@CMDSouGouActivity,
                 R.color.color_light_blue))
         }
     }
