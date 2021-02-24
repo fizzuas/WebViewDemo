@@ -208,11 +208,11 @@ class WebSouGouActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 Log.i(MyTag, "onPageFinished url= $url")
                 Log.i(MyTag, "onPageFinished title= " + view?.title)
-                view!!.loadUrl(
-                    "javascript:" + "var url=\"${url!!}\";" +
-                            "window.java_obj.showSource("
-                            + "document.getElementsByTagName('html')[0].innerHTML,url);"
-                )
+//                view!!.loadUrl(
+//                    "javascript:" + "var url=\"${url!!}\";" +
+//                            "window.java_obj.showSource("
+//                            + "document.getElementsByTagName('html')[0].innerHTML,url);"
+//                )
                 val keyWord = mKeyWords[mRequestIndex].first
                 val siteInfo = mKeyWords[mRequestIndex].second
 
@@ -228,18 +228,19 @@ class WebSouGouActivity : AppCompatActivity() {
                     Log.i(MyTag, "keyword$keyWord")
                     Log.i(MyTag, "siteInfo$siteInfo")
                     val head = "var keyword=\"$keyWord\";"
-                    view.loadUrl("javascript:$head$jsForm")
+                    view!!.loadUrl("javascript:$head$jsForm")
 //                    GlobalScope.launch {
 //                        delay(200)
 //                        val result = ShellUtils.execTap(880, 585)
 //                        Log.i(MyTag, "tap result==" + result.toString())
 //                    }
 
-                }else if(url.startsWith("https://wap.sogou.com/web/searchList.jsp")){
+                }else if(url!!.startsWith("https://wap.sogou.com/web/searchList.jsp")){
+                    Log.e("oyx","url="+url);
                     val jsToClickNext=application.assets.open("sougou/js_next_page.js").bufferedReader().use {
                         it.readText()
                     }
-                    view.loadUrl("javascript:$jsToClickNext")
+                    view!!.loadUrl("javascript:$jsToClickNext")
                 }
 //
 //                else if (url.contains(siteInfo)) {
