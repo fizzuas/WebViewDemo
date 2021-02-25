@@ -44,7 +44,7 @@
         android:inputType="number"
         android:text="0"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/but_tonext"
+        app:layout_constraintEnd_toStartOf="@+id/but_baidu"
         app:layout_constraintTop_toBottomOf="@id/but_addkw" />
 
     <Button
@@ -58,7 +58,7 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
-        android:id="@+id/but_tonext"
+        android:id="@+id/but_baidu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="开始"

@@ -21,6 +21,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kydw.webviewdemo.*
 import com.kydw.webviewdemo.adapter.*
+import com.kydw.webviewdemo.baidu_sougou.WebSouGouActivity
 import com.kydw.webviewdemo.dialog.*
 import com.kydw.webviewdemo.network.UpdateService
 import com.kydw.webviewdemo.network.UploadFileInfo
@@ -86,9 +87,61 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         PermissionUtil.askForRequiredPermissions(this)
 
         registerReceiver(receiver, intentFilter)
-        but_tonext.setOnClickListener {
+        but_baidu.setOnClickListener {
             saveCache()
             val intent = Intent(this, WebActivity::class.java)
+            models.forEach {
+                Log.e("oyx", "but_tonext" + it.toString())
+            }
+
+            intent.putExtra(KEYWORD_SITES, models.toTypedArray())
+            val count = et_count.text.toString().toIntOrNull()
+
+            if (count != null) {
+                intent.putExtra(CIRCLE_COUNT, count)
+            } else {
+                ToastUtil.show(this, "请输入循环次数")
+                return@setOnClickListener
+            }
+            if (models.size < 1) {
+                ToastUtil.show(this, "请输入关键词或网址")
+                return@setOnClickListener
+            }
+
+            //root permission
+            if (!ShellUtils.checkRootPermission()) {
+                AlertDialog.Builder(this).setTitle("请给应用授予root权限：")
+                    .setMessage("操作：" +
+                            "点击root权限通知 或者\n" +
+                            "设置->授权管理->Root权限管理->打开${appName(this)}权限").setCancelable(true)
+                    .setPositiveButton("确定", object : DialogInterface.OnClickListener {
+                        override fun onClick(dialog: DialogInterface?, which: Int) {
+                            startActivity(Intent(Settings.ACTION_SETTINGS));//直接跳转到设置界面
+                        }
+                    })
+                    .create().show()
+                return@setOnClickListener
+            }
+
+            // sd permission
+            if (!PermissionUtil.hasRequiredPermissions(this)) {
+                PermissionUtil.askForRequiredPermissions(this)
+                return@setOnClickListener
+            }
+
+            val statue = NetState.getNetWorkStatus(this)
+            val isOn = NetState.hasNetWorkConnection(this)
+            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
+            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
+                startActivity(intent)
+            } else {
+                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
+            }
+        }
+
+        but_sougou.setOnClickListener {
+            saveCache()
+            val intent = Intent(this, WebSouGouActivity::class.java)
             models.forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
             }
