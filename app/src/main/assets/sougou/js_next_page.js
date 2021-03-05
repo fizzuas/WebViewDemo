@@ -56,10 +56,11 @@ function checkLoadNext() {
     if ((parseInt(pn) - 1) > mPageNum) {
         console.log((parseInt(pn) - 1) + "页加载完成");
         count = 0;
-        if ((parseInt(pn) - 1) > 40) {
-            console.log("前40页分析完毕");
+        if ((parseInt(pn) - 1) > page_max) {
+            console.log("前"+page_max+"页分析完毕");
             window.java_obj.requestFinished();
         } else {
+            window.java_obj.requestPageNUM((parseInt(pn) - 1));
             dealPage();
         }
     } else {
@@ -74,7 +75,7 @@ function checkLoadNext() {
 }
 var mPageNum = 0;
 
-/* 分析页面->匹配元素->滑动到底部点击下一页， 循环40次*/
+/* 分析页面->匹配元素->滑动到底部点击下一页， 循环circle_count次*/
 function dealPage() {
     var nodeNext = document.getElementById("ajax_next_page");
     if(nodeNext==null){

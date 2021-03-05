@@ -49,7 +49,7 @@ public class NetState {
     }
 
 
-    public static int getNetWorkClass(Context context) {
+    private static int getNetWorkClass(Context context) {
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
         switch (telephonyManager.getNetworkType()) {

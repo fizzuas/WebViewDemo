@@ -35,9 +35,14 @@ import java.util.*
 
 class WebSouGouActivity : AppCompatActivity() {
 
-    var isDealingWebError = false
-    var mCircleCount = 1
+    private var mLookTime: Int = 0
+    private var mSwitchIPPages: Int = 0
+    private var mSingleLoopMaxPages: Int = 0
+    private var mCircleCount = 1
     var mCircleIndex = 1
+
+
+    var isDealingWebError = false
     var stoped = false
 
     // <div class="results" data-page="2"> vrResult 节点的起始偏移index
@@ -66,7 +71,7 @@ class WebSouGouActivity : AppCompatActivity() {
             val activity = mActivity.get()
             when (msg.what) {
                 MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT -> {
-                    //次 页not  found，或者搜索满页， 下一个关键词
+                    //页面异常，没有"下一页"Node"
                     activity?.nextKeyWord()
                 }
                 MSG_TARGET_JUMP_SUC -> {
@@ -117,15 +122,18 @@ class WebSouGouActivity : AppCompatActivity() {
         val curTime = Date().time
         val lastTime = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .getLong(KEY_LOAD_PAGE_TIME, curTime)
+        val lastIndex=getSharedPreferences(SP_NAME,Context.MODE_PRIVATE).getInt(KEY_LOAD_CIRCLE_LAST_INDEX,0)
+
         Log.i(MyTag, TAG_CHECK + "curTime=" + curTime + "\t" + "lastTime=" + lastTime)
         Log.i(MyTag,
             TAG_CHECK + "小于五分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
 
-        if ((curTime - lastTime) > CHECK_TIME_INTERVAL) {
-            Log.e(MyTag, TAG_CHECK + "WEB_NO_UPDATE_5_MIN")
-            ToastUtil.show(this, "检查到网页五分钟没有更新")
-            dealWebException()
-        }
+        // TODO: 2021/3/5 5分钟页面检查
+//        if ((curTime - lastTime) > CHECK_TIME_INTERVAL) {
+//            Log.e(MyTag, TAG_CHECK + "WEB_NO_UPDATE_5_MIN")
+//            ToastUtil.show(this, "检查到网页五分钟没有更新")
+//            dealWebException()
+//        }
     }
 
     private fun dealWebException() {
@@ -144,8 +152,8 @@ class WebSouGouActivity : AppCompatActivity() {
                 mLoadingCheckNetDialog?.show()
                 do {
                     count++
-                    ShellUtils.execCommand(CMD.DATA_ON, true)
-                    ShellUtils.execCommand(CMD.WIFI_OFF, true)
+                    ShellUtils.execCommand(CMD.DATA_OFF, true)
+                    ShellUtils.execCommand(CMD.WIFI_ON, true)
                     delay(2000)
                     if (NetState.hasNetWorkConnection(this@WebSouGouActivity) && isOnline()) {
                         webViewGoBack()
@@ -220,7 +228,7 @@ class WebSouGouActivity : AppCompatActivity() {
             }
             delay(2000)
             withContext(Dispatchers.Main) {
-                mLoadingSwitchFlyDialog?.hide()
+                mLoadingSwitchFlyDialog?.dismiss()
                 if (mKeyWordIndex < mKeyWords.lastIndex) {
                     mKeyWordIndex++
                     webview.loadUrl(baiduIndexUrl)
@@ -236,6 +244,7 @@ class WebSouGouActivity : AppCompatActivity() {
                             finish()
                         } else {
                             //开启下一次循环
+                            ToastUtil.show(this@WebSouGouActivity, "开启第"+(mCircleIndex+1)+"次循环")
                             nextCircle()
                         }
                         mCircleIndex++
@@ -243,8 +252,6 @@ class WebSouGouActivity : AppCompatActivity() {
                 }
             }
         }
-
-
     }
 
     private fun nextCircle() {
@@ -257,52 +264,6 @@ class WebSouGouActivity : AppCompatActivity() {
         }
         clearCache()
         webview.loadUrl(baiduIndexUrl)
-
-//        //切换IP
-//        if (mLoadingDbDialog == null) {
-//            mLoadingDbDialog =
-//                JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
-//                    .setWidth_Height_dp(300, 120).setCancelable(isRoot)
-//                    .create()
-//        }
-//        mLoadingDbDialog?.show()
-//
-//        // switchIP
-//        GlobalScope.launch(Dispatchers.IO) {
-//            val result0 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-//            if (result0?.successMsg != null) {
-//                val sucMsg0 = result0.successMsg!!
-//                Log.i(MyTag, "result0.sucMsg0=$sucMsg0, ")
-//                saveIP(sucMsg0)
-//            }
-//
-//            ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
-//            delay(2000)
-//            ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
-//
-//            //关掉飞行时，4G 需要慢慢打开
-//            delay(2000)
-//
-//            for (i in 1..60) {
-//                if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
-//                    val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-//                    if (result1?.successMsg != null) {
-//                        Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
-//                        appendFile(result1.successMsg + "\n\n",
-//                            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
-//                            this@WebActivity)
-//                    }
-//                    break
-//                } else {
-//                    Log.i(MyTag, "网络未建立，再等2秒,$i")
-//                    delay(2000)
-//                }
-//            }
-//            delay(2000)
-//            withContext(Dispatchers.Main) {
-//
-//            }
-//        }
     }
 
     private fun saveIP(sucMsg0: String) {
@@ -395,7 +356,7 @@ class WebSouGouActivity : AppCompatActivity() {
                         jsList.append("\"${siteInfo[i].url}\",")
                     }
                     jsList.append("]")
-                    val head = "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;"
+                    val head = "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;"
                     Log.e(MyTag, "jsList head=" + head)
                     view!!.loadUrl("javascript:$head$jsToNext")
                 } else
@@ -461,9 +422,9 @@ class WebSouGouActivity : AppCompatActivity() {
     }
 
     private fun initData(intent: Intent) {
-        val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
-        mCircleCount = intent.getIntExtra(CIRCLE_COUNT, 0)
+        restore()
 
+        val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
         list!!.forEach {
             Log.i(MyTag, "initData\t" + it.toString())
         }
@@ -577,6 +538,20 @@ class WebSouGouActivity : AppCompatActivity() {
             cookieSyncManager.sync()
         }
     }
+
+    private fun restore() {
+        mCircleCount = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(LOOP_COUNT, 0)
+
+        mSingleLoopMaxPages = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
+            SINGLE_LOOP_PAGE_MAX,
+            SINGLE_LOOP_PAGE_MAX_DEFAULT)
+
+        mSwitchIPPages =
+            getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
+
+        mLookTime =
+            getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(PAGE_LOOP_TIME, 0)
+    }
 }
 
 
@@ -615,7 +590,7 @@ private class InJavaScriptLocalObj(val context: Context) {
     fun requestFinished() {
         Log.i(MyTag, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
         GlobalScope.launch(Dispatchers.Main) {
-            // 40页都找不到，下一页异常
+            // 页面没有"下一页"，页面异常
             (context as WebSouGouActivity).handler.sendEmptyMessage(
                 MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT)
         }
@@ -655,5 +630,6 @@ private class InJavaScriptLocalObj(val context: Context) {
             (context as WebSouGouActivity).handler.sendMessage(msg)
         }
     }
+
 
 }

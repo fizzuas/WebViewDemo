@@ -15,28 +15,28 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:padding="10dp"
         android:id="@+id/tv_kw"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:padding="10dp"
         android:text="关键字"
         android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/recy_configs"
         app:layout_constraintEnd_toStartOf="@+id/tv_sites"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_version_name"
-        app:layout_constraintBottom_toTopOf="@id/recy_configs" />
+        app:layout_constraintTop_toBottomOf="@id/tv_version_name" />
 
     <TextView
-        android:padding="10dp"
         android:id="@+id/tv_sites"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:padding="10dp"
         android:text="网址"
         android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/recy_configs"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/tv_kw"
-        app:layout_constraintTop_toBottomOf="@id/tv_version_name"
-        app:layout_constraintBottom_toTopOf="@id/recy_configs"/>
+        app:layout_constraintTop_toBottomOf="@id/tv_version_name" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recy_configs"
@@ -49,28 +49,18 @@
         app:layout_constraintTop_toBottomOf="@id/tv_kw"
         app:layout_constraintVertical_bias="0.0" />
 
-    <TextView
+    <Button
+        android:id="@+id/but_set"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="5dp"
-        android:text="循环次数(0为不限次):"
+        android:text="设置"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toLeftOf="@+id/et_count"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/but_addkw"
 
         />
 
-    <EditText
-        android:id="@+id/et_count"
-        android:layout_width="35dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:gravity="center"
-        android:inputType="number"
-        android:text="0"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/but_sougou"
-        app:layout_constraintTop_toBottomOf="@id/but_addkw" />
 
     <Button
         android:id="@+id/but_addkw"
@@ -78,18 +68,18 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:text="添加关键词"
-        app:layout_constraintTop_toBottomOf="@id/recy_configs"
         app:layout_constraintEnd_toStartOf="@id/but_add_site"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/recy_configs" />
 
     <Button
         android:id="@+id/but_add_site"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="添加网址"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/but_addkw"
-        app:layout_constraintTop_toBottomOf="@+id/recy_configs"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toBottomOf="@+id/recy_configs" />
 
     <Button
         android:id="@+id/but_baidu"
@@ -105,11 +95,11 @@
         android:id="@+id/but_sougou"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
         android:text="搜狗"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/but_baidu"
-        android:layout_marginRight="5dp"
 
-    />
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

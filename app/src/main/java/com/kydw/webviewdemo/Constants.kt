@@ -14,6 +14,7 @@ const val DIALOG_INPUT = "DIALOG_INPUT"
 //SP
 const val SP_NAME = "SP"
 const val KEY_LOAD_PAGE_TIME = "LOAD_PAGE_TIME"
+const val KEY_LOAD_CIRCLE_LAST_INDEX = "KEY_LOAD_CIRCLE_LAST_INDEX"
 
 
 // WebActivity handler消息key
@@ -28,3 +29,12 @@ const val KEY_CACHE_LIST = "KEY_CACHE_LIST"
 
 const val HOST_API = "http://47.111.177.58:9110/WebServices/AppUpdateWebService.svc/"
 const val HOST_DOWN = "http://47.111.177.58:9110"
+
+//sp
+const val LOOP_COUNT = "LOOP_COUNT"
+const val SINGLE_LOOP_PAGE_MAX = "SINGLE_LOOP_PAGE_MAX"
+const val SWITCH_IP_PAGE_NUM = "SWITCH_IP_PAGE_NUM"
+const val PAGE_LOOP_TIME = "PAGE_LOOP_TIME"
+
+const val SINGLE_LOOP_PAGE_MAX_DEFAULT = 40
+

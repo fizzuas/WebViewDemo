@@ -200,7 +200,7 @@ if (pageNo.length == 0) {
     var nextOnlys = document.getElementsByClassName("next");
     if (nextOnlys.length == 1) {
       setTimeout(scrollTo(nextOnlys[0]), time);
-      if (pageNo[0].innerText == "第40页") {
+      if (pageNo[0].innerText == "第3页") {
         /* 当前页="第40页" 就不跳转了 */
         console.log("已经第40页");
         window.java_obj.saveLog(logBack);

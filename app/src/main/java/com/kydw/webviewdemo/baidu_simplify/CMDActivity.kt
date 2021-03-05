@@ -48,6 +48,9 @@ const val MyTag: String = "oyx"
 
 class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener,
     DialogInputSite.OnOKListener, DialogEditKW.OnKW2Listener, DialogEditSite.OnSite2Listener {
+
+
+
     var models = mutableListOf<Model>(
 //        Model("钥匙机", "www.kydz-wx.com")
 //        Model("钥匙机", "baike.baidu.com"),
@@ -88,21 +91,13 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
         registerReceiver(receiver, intentFilter)
         but_baidu.setOnClickListener {
-            saveCache()
             val intent = Intent(this, WebActivity::class.java)
             models.forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
             }
 
             intent.putExtra(KEYWORD_SITES, models.toTypedArray())
-            val count = et_count.text.toString().toIntOrNull()
 
-            if (count != null) {
-                intent.putExtra(CIRCLE_COUNT, count)
-            } else {
-                ToastUtil.show(this, "请输入循环次数")
-                return@setOnClickListener
-            }
             if (models.size < 1) {
                 ToastUtil.show(this, "请输入关键词或网址")
                 return@setOnClickListener
@@ -129,32 +124,24 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
                 return@setOnClickListener
             }
 
-            val statue = NetState.getNetWorkStatus(this)
-            val isOn = NetState.hasNetWorkConnection(this)
-            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
-            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
-                startActivity(intent)
-            } else {
-                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
-            }
+//            val statue = NetState.getNetWorkStatus(this)
+//            val isOn = NetState.hasNetWorkConnection(this)
+//            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
+//            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
+            startActivity(intent)
+//            } else {
+//                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
+//            }
         }
 
         but_sougou.setOnClickListener {
-            saveCache()
             val intent = Intent(this, WebSouGouActivity::class.java)
             models.forEach {
                 Log.e("oyx", "but_tonext" + it.toString())
             }
 
             intent.putExtra(KEYWORD_SITES, models.toTypedArray())
-            val count = et_count.text.toString().toIntOrNull()
 
-            if (count != null) {
-                intent.putExtra(CIRCLE_COUNT, count)
-            } else {
-                ToastUtil.show(this, "请输入循环次数")
-                return@setOnClickListener
-            }
             if (models.size < 1) {
                 ToastUtil.show(this, "请输入关键词或网址")
                 return@setOnClickListener
@@ -184,7 +171,8 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
             val statue = NetState.getNetWorkStatus(this)
             val isOn = NetState.hasNetWorkConnection(this)
             Log.e(MyTag, "isON" + isOn + ";statue" + statue)
-            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
+//            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
+            if (isOn && statue == NetState.NETWORK_WIFI) {
                 startActivity(intent)
             } else {
                 ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
@@ -213,6 +201,17 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         but_add_site.setOnClickListener {
             mStartDialog.show(supportFragmentManager, DIALOG_INPUT_SITE)
         }
+
+        but_set.setOnClickListener {
+            val intent = Intent(this, SettingActivity::class.java)
+            startActivity(intent)
+        }
+
+    }
+
+    override fun onStop() {
+        super.onStop()
+        saveCache()
 
     }
 
@@ -269,7 +268,6 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         unregisterReceiver(receiver)
     }
-
 
 
     private fun checkUpdate() {
@@ -379,7 +377,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         }
     }
 
-    fun saveCache() {
+    private fun saveCache() {
         //保存到缓存
         GlobalScope.launch(Dispatchers.IO) {
             ACache.get(this@CMDActivity).clear()
@@ -396,17 +394,18 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
     override fun onEditKWOK(position: Int, kw: String, site: String) {
         Log.e("oyx", "position=$position,\tKW=$kw,\tsite=$site")
-        models[position].keyword=kw
-        models[position].site=site
+        models[position].keyword = kw
+        models[position].site = site
         modelAdapter.notifyDataSetChanged()
     }
 
     override fun onEditSiteOK(position: Int, site: String) {
         Log.e("oyx", "position=$position,\tsite$site")
-        models[position].keyword=site
-        models[position].site=site
+        models[position].keyword = site
+        models[position].site = site
         modelAdapter.notifyDataSetChanged()
     }
+
     override fun onAddKeySiteConfirm(kw: String, sites: MutableList<String>) {
         Log.i(MyTag, "kw" + kw + ",sites" + sites.toString())
         sites.forEach {
@@ -414,6 +413,8 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         }
         modelAdapter.notifyDataSetChanged()
     }
+
+
 }
 
 

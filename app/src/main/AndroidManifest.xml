@@ -17,16 +17,18 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".test.TestDialogActivity"></activity>
+        <activity android:name=".test.TestDialogActivity" />
         <activity android:name=".test.TestCoroutinesActivity" />
-        <activity android:name=".baidu_sougou.CMDSouGouActivity" >
-<!--            <intent-filter>-->
-<!--                <action android:name="android.intent.action.MAIN" />-->
+        <activity android:name=".baidu_sougou.CMDSouGouActivity">
 
-<!--                <category android:name="android.intent.category.LAUNCHER" />-->
-<!--            </intent-filter>-->
+<!--             <intent-filter>-->
+<!--             <action android:name="android.intent.action.MAIN" />-->
+
+
+<!--             <category android:name="android.intent.category.LAUNCHER" />-->
+<!--             </intent-filter>-->
         </activity>
-        <activity android:name=".baidu_sougou.WebSouGouActivity"></activity>
+        <activity android:name=".baidu_sougou.WebSouGouActivity" />
         <activity
             android:name=".baidu_simplify.CMDActivity"
             android:screenOrientation="portrait">
@@ -52,6 +54,13 @@
         <activity
             android:name=".test.TestAutoSwipeByShellActivity"
             android:screenOrientation="portrait" />
+        <activity android:name=".SettingActivity">
+<!--        <intent-filter>-->
+<!--            <action android:name="android.intent.action.MAIN" />-->
+
+<!--            <category android:name="android.intent.category.LAUNCHER" />-->
+<!--        </intent-filter>-->
+        </activity>
     </application>
 
 </manifest>

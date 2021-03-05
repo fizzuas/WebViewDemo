@@ -19,7 +19,7 @@ class TestCoroutinesActivity : AppCompatActivity() {
         GlobalScope.launch(Dispatchers.Main) {
             do {
                 delay(2000)
-                ShellUtils.execCommand(CMD.DATA_ON, true)
+//                ShellUtils.execCommand(CMD.DATA_ON, true)
 //                if (NetState.hasNetWorkConnection(this@TestCoroutinesActivity) && isOnline()) {
                     textView3.text = Date().time.toString()
 //                    return@launch
