@@ -331,7 +331,7 @@ class CMDSouGouActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickLi
         }
     }
 
-    fun saveCache() {
+    private fun saveCache() {
         //保存到缓存
         GlobalScope.launch(Dispatchers.IO) {
             ACache.get(this@CMDSouGouActivity).clear()

@@ -52,7 +52,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
 
     var models = mutableListOf<Model>(
-//        Model("钥匙机", "www.kydz-wx.com")
+        Model("钥匙机", "www.kydz-wx.com")
 //        Model("钥匙机", "baike.baidu.com"),
 //        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
 //        Model("手机", "www.oneplus.com")

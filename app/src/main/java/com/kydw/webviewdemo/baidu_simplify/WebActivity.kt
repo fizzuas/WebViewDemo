@@ -383,10 +383,15 @@ class WebActivity : AppCompatActivity() {
                             mLatestLookedUrl=it.url
                         }
                     }
+                    val  spLookTime=
+                        getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(PAGE_LOOP_TIME, 0)
+                    val lookTime=if(spLookTime<1000) 1000 else spLookTime
+                    val head="var look_time=$lookTime;"
+
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
                     }
-                    view.loadUrl("javascript:$jsLook")
+                    view.loadUrl("javascript:$head$jsLook")
                 } else if (url.contains("baidu.com")) {
                     Log.e(TAG, "百度搜索后首页加载=$url")
                     if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
@@ -398,6 +403,7 @@ class WebActivity : AppCompatActivity() {
                             }
                         view.loadUrl("javascript:$jsSwipe")
                     } else {
+
                         Log.e(MyTag, "发现下一页加载=" + url)
                         //Next 页
                         val jsToNext =
@@ -413,7 +419,11 @@ class WebActivity : AppCompatActivity() {
                             }
                         }
                         jsList.append("]")
-                        val head = "var targetSites=$jsList;"
+
+                        val pageMax= getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
+                            SINGLE_LOOP_PAGE_MAX,
+                            SINGLE_LOOP_PAGE_MAX_DEFAULT)
+                        val head = "var targetSites=$jsList; var page_max=$pageMax;"
                         Log.e(MyTag, "jsList head=" + head)
                         view.loadUrl("javascript:$head$jsToNext")
                         mLatestLookedUrl=""
@@ -586,6 +596,8 @@ class WebActivity : AppCompatActivity() {
             cookieSyncManager.sync()
         }
     }
+
+
 }
 
 

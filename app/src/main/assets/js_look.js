@@ -31,20 +31,22 @@ function toBottom(target) {
 }
 
 function finish(){
+    console.log("finish");
   window.java_obj.finish();
 }
 
 var divs = document.getElementsByTagName("body")[0].getElementsByTagName("div");
 console.log("\n divs.length= " + divs.length);
 var step = 1;
-var time=100;
+var time=look_time/10;
 if (divs.length > 10) {
   step = parseInt(divs.length / 10);
 }
 console.log("\n step= " + step);
 for(i=0;i<divs.length;i=i+step){
   setTimeout(toTop(divs[i]),time);
-  time+=randomNum(300,1250);
+  time+=(look_time/10);
+  console.log("i="+i+",time="+time);
    if((i+step)>(divs.length-1)){
     setTimeout(finish,time);
    }

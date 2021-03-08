@@ -23,6 +23,7 @@ const val MSG_TARGET_JUMP_SUC = 1
 const val MSG_WEB_VIEW_RECEIVE_ERROR = 2
 const val MSG_WEB_VIEW_SET_INDEX = 3
 const val MSG_CHECKING_WEB_UPDATE = 5
+const val MSG_PAGE_INDEX = 6
 
 const val KEY_CACHE_LIST = "KEY_CACHE_LIST"
 

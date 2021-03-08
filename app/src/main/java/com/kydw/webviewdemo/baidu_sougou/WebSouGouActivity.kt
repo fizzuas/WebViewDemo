@@ -46,7 +46,7 @@ class WebSouGouActivity : AppCompatActivity() {
     var stoped = false
 
     // <div class="results" data-page="2"> vrResult 节点的起始偏移index
-    var mPageItemIndex=0
+    var mPageItemIndex = 0
 
     val isRoot = true
     private var mLoadingSwitchFlyDialog: JAlertDialog? = null
@@ -85,8 +85,11 @@ class WebSouGouActivity : AppCompatActivity() {
                 MSG_CHECKING_WEB_UPDATE -> {
                     activity?.checkWebUpdate()
                 }
-                MSG_WEB_VIEW_SET_INDEX ->{
+                MSG_WEB_VIEW_SET_INDEX -> {
                     activity?.setItemStartIndex(msg.arg1)
+                }
+                MSG_PAGE_INDEX -> {
+                    activity?.htmlPage(msg.arg1)
                 }
                 else -> {
                 }
@@ -95,23 +98,23 @@ class WebSouGouActivity : AppCompatActivity() {
     }
 
     private fun setItemStartIndex(index: Int) {
-        Log.i(MyTag,"setItemIndex"+index)
-        mPageItemIndex=index
+        Log.i(MyTag, "setItemIndex" + index)
+        mPageItemIndex = index
     }
 
     private fun onTargetJumpSuc() {
-//        var flag = false //一个关键字下请求有一个未请求到就为true
-//        mKeyWords[mKeyWordIndex].second.forEach {
-//            if (!it.isRequested) {
-//                flag = true
-//            }
-//        }
-//        if (flag) {
-//            nextRequest()
-//        } else {
-//            nextKeyWord()
-//        }
         nextRequest()
+    }
+
+    private fun htmlPage(pageNum: Int) {
+        val switchIPPages =
+            getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
+        if ((switchIPPages > 0) && (pageNum % switchIPPages == 0)) {
+            Log.i(MyTag,   "$pageNum need  switch ip")
+
+
+        }
+
     }
 
 
@@ -122,7 +125,9 @@ class WebSouGouActivity : AppCompatActivity() {
         val curTime = Date().time
         val lastTime = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .getLong(KEY_LOAD_PAGE_TIME, curTime)
-        val lastIndex=getSharedPreferences(SP_NAME,Context.MODE_PRIVATE).getInt(KEY_LOAD_CIRCLE_LAST_INDEX,0)
+        val lastIndex = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
+            KEY_LOAD_CIRCLE_LAST_INDEX,
+            0)
 
         Log.i(MyTag, TAG_CHECK + "curTime=" + curTime + "\t" + "lastTime=" + lastTime)
         Log.i(MyTag,
@@ -244,7 +249,8 @@ class WebSouGouActivity : AppCompatActivity() {
                             finish()
                         } else {
                             //开启下一次循环
-                            ToastUtil.show(this@WebSouGouActivity, "开启第"+(mCircleIndex+1)+"次循环")
+                            ToastUtil.show(this@WebSouGouActivity,
+                                "开启第" + (mCircleIndex + 1) + "次循环")
                             nextCircle()
                         }
                         mCircleIndex++
@@ -284,26 +290,7 @@ class WebSouGouActivity : AppCompatActivity() {
 
         initData(intent)
 
-//        webview = WebView(applicationContext)
-//        val lp = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-//        webview.layoutParams = lp
-//        content.addView(webview)
-
-
         webview.webViewClient = object : WebViewClient() {
-//            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-//                if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
-//                    return false
-//                } else try {
-//                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-//                    view!!.context.startActivity(intent)
-//                    return true
-//                } catch (e: Exception) {
-//                    Log.i(TAG, "shouldOverrideUrlLoading Exception:$e")
-//                    return true
-//                }
-//            }
-
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
 
@@ -342,7 +329,7 @@ class WebSouGouActivity : AppCompatActivity() {
                     Log.i(MyTag, "siteInfo$siteInfo")
                     val head = "var keyword=\"$keyWord\";"
                     view!!.loadUrl("javascript:$head$jsForm")
-                }else if (url!!.startsWith("https://wap.sogou.com/web/searchList.jsp")) {
+                } else if (url!!.startsWith("https://wap.sogou.com/web/searchList.jsp")) {
                     Log.e(MyTag, "搜狗搜索后首页加载=$url")
                     //Next 页
                     val jsToNext =
@@ -356,23 +343,24 @@ class WebSouGouActivity : AppCompatActivity() {
                         jsList.append("\"${siteInfo[i].url}\",")
                     }
                     jsList.append("]")
-                    val head = "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;"
+                    val head =
+                        "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;"
                     Log.e(MyTag, "jsList head=" + head)
                     view!!.loadUrl("javascript:$head$jsToNext")
-                } else
-                 {
+                } else {
                     Log.e(MyTag, "目标页加载成功=$url")
                     siteInfo.forEach {
                         if (url.contains(it.url)) {
                             it.isRequested = true
                         }
                     }
+                    val lookTime=if(mLookTime<1000) 1000 else mLookTime
+                    val head="var look_time=$lookTime;"
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
                     }
-                    view!!.loadUrl("javascript:$jsLook")
+                    view!!.loadUrl("javascript:$head$jsLook")
                 }
-
             }
 
             override fun onReceivedSslError(
@@ -392,22 +380,11 @@ class WebSouGouActivity : AppCompatActivity() {
         webview.keepScreenOn = true
 
         but_stop.setOnClickListener {
-            stoped = true
-            webview.reload()
-//            webview.reload()
-//            if (stoped) {
-//                //点击了继续
-//                but.text = "暂停"
-//            } else {
-//                //点击了暂停
-//                but.text = "正在暂停..."
-//                webview.reload()
-//            }
-//            stoped = !stoped
+            stopWebView()
+
         }
         but_go.setOnClickListener {
-            stoped = false
-            webview.reload()
+            reStartWebView()
         }
 
 
@@ -419,6 +396,16 @@ class WebSouGouActivity : AppCompatActivity() {
             }
         }
         handler.postDelayed(runnable, CHECK_TIME_INTERVAL)
+    }
+
+    private fun reStartWebView() {
+        stoped = false
+        webview.reload()
+    }
+
+    private fun stopWebView() {
+        stoped = true
+        webview.reload()
     }
 
     private fun initData(intent: Intent) {
@@ -620,15 +607,28 @@ private class InJavaScriptLocalObj(val context: Context) {
     }
 
     @JavascriptInterface
-    fun setItemStartIndex(itemStartIndex:Int){
+    fun setItemStartIndex(itemStartIndex: Int) {
         Log.i(MyTag, "itemStartIndex=$itemStartIndex")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
-            val msg=Message()
-            msg.what=MSG_WEB_VIEW_SET_INDEX
-            msg.arg1=itemStartIndex
+            val msg = Message()
+            msg.what = MSG_WEB_VIEW_SET_INDEX
+            msg.arg1 = itemStartIndex
             (context as WebSouGouActivity).handler.sendMessage(msg)
         }
+    }
+
+    @JavascriptInterface
+    fun requestPageNUM(pageNum: Int) {
+        Log.i(MyTag, "pageNum==" + pageNum)
+        GlobalScope.launch(Dispatchers.Main) {
+            // 目标网页跳转成功
+            val msg = Message()
+            msg.what = MSG_PAGE_INDEX
+            msg.arg1 = pageNum
+            (context as WebSouGouActivity).handler.sendMessage(msg)
+        }
+
     }
 
 
