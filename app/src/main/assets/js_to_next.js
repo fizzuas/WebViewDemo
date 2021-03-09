@@ -1,4 +1,5 @@
 var targetEleA = null;
+var curPage=1;
 /*生成从minNum到maxNum的随机数*/
 function randomNum(minNum,maxNum){
     switch(arguments.length){
@@ -41,7 +42,9 @@ console.log(curTime);
 var logBack = "";
 var pageNo = document.getElementsByClassName("pageNo");
 if (pageNo.length == 0) {
-  /* 第一页--》第二页 ，打印第一页 */
+    curPage=1;
+    console.log("curPage="+curPage);
+  /* 结果 第一页--》第二页 ，打印第一页 */
   logBack = logBack + "第一页:" + "\t(" + curTime + ")";
   console.log("第一页:");
   var scTitles = document.getElementsByClassName("ec_title");
@@ -77,7 +80,14 @@ if (pageNo.length == 0) {
   }
   var resultTitles = document.getElementsByClassName("result_title");
   logBack = logBack + "\n\n(result总共" + resultTitles.length + "项)";
-  for (i = 0; i < resultTitles.length; i++) {
+  var start=0;
+  if(curPage==pinPage){
+    start=pinIndex;
+     window.java_obj.pinIndex(0,0);
+  }else{
+    start=0;
+  }
+  for (i = start; i < resultTitles.length; i++) {
     /* 获取 ad 的title、href，并打印 */
     var href = resultTitles[i].href;
     var site = resultTitles[i].parentElement.getElementsByClassName("site")[0]
@@ -105,9 +115,13 @@ if (pageNo.length == 0) {
        console.log("\tsearch="+m);
           if (m!=-1) {
             targetEleA = resultTitles[i];
+            pinIndex=i+1;
+            pinPage=curPage;
           }
       }
   }
+
+
   /* 模拟滑动，然后跳转到第二页 */
   var time = randomNum(300,1250);
   for (i = 0; i < scTitles.length; i++) {
@@ -148,15 +162,29 @@ if (pageNo.length == 0) {
   } else {
     time += randomNum(300,1250);
     setTimeout(clickToTarget(), time);
+    window.java_obj.pinIndex(pinPage,pinIndex);
   }
 } else {
   /* 第2..N页--》第3..+ N+1页 ，打印第2..页 */
+    var pageInfo= pageNo[0].innerText;
+    if(pageInfo.length==3){
+    curPage=parseInt(pageInfo[1]);
+    console.log("curPage="+curPage);
+    }
+
   logBack =
     logBack + "\n\n" + pageNo[0].innerText + ":" + "\t(" + curTime + ")";
   var rssultTitles = document.getElementsByClassName("result_title");
   logBack = logBack + "\n\n(result总共" + rssultTitles.length + "项)";
   console.log("\n\n" + pageNo[0].innerText + ":");
-  for (i = 0; i < rssultTitles.length; i++) {
+    var start=0;
+    if(curPage==pinPage){
+      start=pinIndex;
+      window.java_obj.pinIndex(0,0);
+    }else{
+      start=0;
+    }
+  for (i = start; i < rssultTitles.length; i++) {
     /* 获取 ad 的title、href */
     var href = rssultTitles[i].href;
     var site = rssultTitles[i].parentElement.getElementsByClassName("site")[0]
@@ -184,6 +212,8 @@ if (pageNo.length == 0) {
           if (m!=-1) {
           console.log("\t 点击 site;\n"+site);
             targetEleA = rssultTitles[i];
+            pinIndex=i+1;
+            pinPage=curPage;
           }
         }
   }
@@ -221,5 +251,8 @@ if (pageNo.length == 0) {
   } else {
     time += randomNum(300,1250);
     setTimeout(clickToTarget(), time);
+     window.java_obj.pinIndex(pinPage,pinIndex);
   }
 }
+
+

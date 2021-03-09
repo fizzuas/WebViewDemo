@@ -45,13 +45,16 @@ class WebActivity : AppCompatActivity() {
     private var mLoadingSwitchFlyDialog: JAlertDialog? = null
     private var mLoadingCheckNetDialog: JAlertDialog? = null
 
+    private var mPinIndex=0
+    private var mPinPage=0
+
     private val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://www.baidu.com/"
 
     val mKeyWords =
         mutableListOf<Pair<String, MutableList<TUrl>>>()
     var mKeyWordIndex = 0
-    var mLatestLookedUrl=""
+//    var mLatestLookedUrl=""
 
     val handler = MyHandler(this)
 
@@ -79,10 +82,19 @@ class WebActivity : AppCompatActivity() {
                 MSG_CHECKING_WEB_UPDATE -> {
                     activity?.checkWebUpdate()
                 }
+                MSG_PAGE_INDEX ->{
+                    activity?.setLastIndex(msg.arg1,msg.arg2)
+                }
                 else -> {
                 }
             }
         }
+    }
+
+    private fun setLastIndex(pinPage: Int,pinIndex:Int) {
+        Log.i(TAG,"setIndex: pinPage"+pinPage+",pinIndex"+pinIndex)
+        mPinPage=pinPage
+        mPinIndex=pinIndex
     }
 
     private fun onTargetJumpSuc() {
@@ -102,7 +114,7 @@ class WebActivity : AppCompatActivity() {
 
 
     private fun checkWebUpdate() {
-        if(stoped){
+        if (stoped) {
             return
         }
         val curTime = Date().time
@@ -211,7 +223,7 @@ class WebActivity : AppCompatActivity() {
             }
             delay(2000)
             withContext(Dispatchers.Main) {
-                mLoadingSwitchFlyDialog?.hide()
+                mLoadingSwitchFlyDialog?.dismiss()
                 if (mKeyWordIndex < mKeyWords.lastIndex) {
                     mKeyWordIndex++
                     webview.loadUrl(baiduIndexUrl)
@@ -380,13 +392,13 @@ class WebActivity : AppCompatActivity() {
                     siteInfo.forEach {
                         if (url.contains(it.url)) {
                             it.isRequested = true
-                            mLatestLookedUrl=it.url
                         }
                     }
-                    val  spLookTime=
-                        getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(PAGE_LOOP_TIME, 0)
-                    val lookTime=if(spLookTime<1000) 1000 else spLookTime
-                    val head="var look_time=$lookTime;"
+                    val spLookTime =
+                        getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(PAGE_LOOP_TIME,
+                            0)
+                    val lookTime = if (spLookTime < 1000) 1000 else spLookTime
+                    val head = "var look_time=$lookTime;"
 
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
@@ -414,19 +426,18 @@ class WebActivity : AppCompatActivity() {
                         val jsList = StringBuilder()
                         jsList.append("[")
                         for (i in siteInfo.indices) {
-                            if (siteInfo[i].url!=mLatestLookedUrl) {
-                                jsList.append("\"${siteInfo[i].url}\",")
-                            }
+//                            if (siteInfo[i].url!=mLatestLookedUrl) {
+                            jsList.append("\"${siteInfo[i].url}\",")
+//                            }
                         }
                         jsList.append("]")
 
-                        val pageMax= getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
+                        val pageMax = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
                             SINGLE_LOOP_PAGE_MAX,
                             SINGLE_LOOP_PAGE_MAX_DEFAULT)
-                        val head = "var targetSites=$jsList; var page_max=$pageMax;"
+                        val head = "var targetSites=$jsList; var page_max=$pageMax;var pinPage=$mPinPage; var pinIndex=$mPinIndex;"
                         Log.e(MyTag, "jsList head=" + head)
                         view.loadUrl("javascript:$head$jsToNext")
-                        mLatestLookedUrl=""
 
                     }
                 }
@@ -450,7 +461,7 @@ class WebActivity : AppCompatActivity() {
         webview.keepScreenOn = true
 
         but_stop.setOnClickListener {
-            stoped=true
+            stoped = true
             webview.reload()
 //            webview.reload()
 //            if (stoped) {
@@ -464,7 +475,7 @@ class WebActivity : AppCompatActivity() {
 //            stoped = !stoped
         }
         but_go.setOnClickListener {
-            stoped=false
+            stoped = false
             webview.reload()
         }
 
@@ -621,14 +632,14 @@ private class InJavaScriptLocalObj(val context: Context) {
 
     @JavascriptInterface
     fun saveLog(content: String) {
-        Log.i(TAG,
-            "saveLog" + context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt")
-        if (PermissionUtil.hasRequiredPermissions(context))
-            appendFile(
-                content,
-                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt",
-                context
-            )
+//        Log.i(TAG,
+//            "saveLog" + context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt")
+//        if (PermissionUtil.hasRequiredPermissions(context))
+//            appendFile(
+//                content,
+//                context.getExternalFilesDir(null)!!.absolutePath + File.separator + "baidu_dianji.txt",
+//                context
+//            )
 
     }
 
@@ -661,6 +672,19 @@ private class InJavaScriptLocalObj(val context: Context) {
         GlobalScope.launch {
             val result = ShellUtils.execSwipe(x0, y0, x1, y1, 500)
             Log.i(MyTag, result.toString())
+        }
+    }
+
+    @JavascriptInterface
+    fun pinIndex(pinPage:Int,pinIndex: Int) {
+        Log.i(TAG, "pinPage=$pinPage;"+"pinIndex=$pinIndex")
+        GlobalScope.launch(Dispatchers.Main) {
+            // 目标网页跳转成功
+            val msg = Message()
+            msg.what = MSG_PAGE_INDEX
+            msg.arg1 = pinPage
+            msg.arg2=pinIndex
+            (context as WebActivity).handler.sendMessage(msg)
         }
     }
 
