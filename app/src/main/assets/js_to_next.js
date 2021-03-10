@@ -34,12 +34,19 @@ function clickToTarget() {
     });
     setTimeout(clickHref(targetEleA), randomNum(300,1250));
   };
+};
+
+var logBack = "";
+function finish() {
+    return function(){
+        console.log("一次循环结束"+page_max);
+        window.java_obj.saveLog(logBack);
+        window.java_obj.requestFinished();
+    };
 }
-
-
 var curTime = new Date().toLocaleString();
 console.log(curTime);
-var logBack = "";
+
 var pageNo = document.getElementsByClassName("pageNo");
 if (pageNo.length == 0) {
     curPage=1;
@@ -87,6 +94,7 @@ if (pageNo.length == 0) {
   }else{
     start=0;
   }
+  /*匹配*/
   for (i = start; i < resultTitles.length; i++) {
     /* 获取 ad 的title、href，并打印 */
     var href = resultTitles[i].href;
@@ -167,8 +175,8 @@ if (pageNo.length == 0) {
 } else {
   /* 第2..N页--》第3..+ N+1页 ，打印第2..页 */
     var pageInfo= pageNo[0].innerText;
-    if(pageInfo.length==3){
-    curPage=parseInt(pageInfo[1]);
+    if(pageInfo.length>=3){
+    curPage=parseInt(pageInfo.substring(1,pageInfo.length-1));
     console.log("curPage="+curPage);
     }
 
@@ -184,6 +192,7 @@ if (pageNo.length == 0) {
     }else{
       start=0;
     }
+    /*匹配*/
   for (i = start; i < rssultTitles.length; i++) {
     /* 获取 ad 的title、href */
     var href = rssultTitles[i].href;
@@ -232,9 +241,8 @@ if (pageNo.length == 0) {
       setTimeout(scrollTo(nextOnlys[0]), time);
       if (pageNo[0].innerText == "第"+page_max+"页") {
         /* 当前页="第页" 就不跳转了 */
-        console.log("一次循环结束"+page_max);
-        window.java_obj.saveLog(logBack);
-        window.java_obj.requestFinished();
+        time+=50;
+         setTimeout(finish(),time);
       } else {
         /* 跳转 */
         window.java_obj.saveLog(logBack);
@@ -255,4 +263,5 @@ if (pageNo.length == 0) {
   }
 }
 
+  window.java_obj.pageIndex(curPage);
 

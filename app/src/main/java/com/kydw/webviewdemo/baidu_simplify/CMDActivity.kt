@@ -50,9 +50,8 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
     DialogInputSite.OnOKListener, DialogEditKW.OnKW2Listener, DialogEditSite.OnSite2Listener {
 
 
-
     var models = mutableListOf<Model>(
-        Model("钥匙机", "www.kydz-wx.com")
+//        Model("钥匙机", "www.kydz-wx.com")
 //        Model("钥匙机", "baike.baidu.com"),
 //        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
 //        Model("手机", "www.oneplus.com")
@@ -388,7 +387,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
 
     override fun onAddSiteOk(site: String) {
-        models.add(Model(site, site, SITE))
+        models.add(Model(site, if (site.startsWith("site:")) site.substring(5) else site, SITE))
         modelAdapter.notifyDataSetChanged()
     }
 
@@ -402,15 +401,24 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
     override fun onEditSiteOK(position: Int, site: String) {
         Log.e("oyx", "position=$position,\tsite$site")
         models[position].keyword = site
-        models[position].site = site
+        models[position].site =  if (site.startsWith("site:")) site.substring(5) else site
         modelAdapter.notifyDataSetChanged()
     }
 
-    override fun onAddKeySiteConfirm(kw: String, sites: MutableList<String>) {
-        Log.i(MyTag, "kw" + kw + ",sites" + sites.toString())
-        sites.forEach {
-            models.add(Model(kw, it))
+    override fun onAddKeySiteConfirm(kws: MutableList<String>, sites: MutableList<String>) {
+        Log.i(MyTag, "kws" + kws.toString() + ",sites" + sites.toString())
+
+        for (i in 0..kws.lastIndex) {
+            sites.forEach {
+                if (kws[i].trim().isNotEmpty() && it.trim().isNotEmpty()) {
+                    Log.i(MyTag, kws[i])
+                    Log.i(MyTag, it)
+
+                    models.add(Model(kws[i], it))
+                }
+            }
         }
+        Log.i(MyTag, models.toString())
         modelAdapter.notifyDataSetChanged()
     }
 

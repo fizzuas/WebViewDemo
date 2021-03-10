@@ -11,8 +11,9 @@ import com.chad.library.adapter.base.module.DraggableModule
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
 import com.kydw.webviewdemo.R
 
-class SitesAdapter(sites: MutableList<String>, val listener: OnSiteClickListener) :
-    BaseQuickAdapter<String, BaseViewHolder>(R.layout.item_site, data = sites), DraggableModule {
+
+class KeysAdapter (keys: MutableList<String>, val listener: OnKeyClickListener) :
+    BaseQuickAdapter<String, BaseViewHolder>(R.layout.item_site, data = keys), DraggableModule {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun convert(holder: BaseViewHolder, item: String) {
@@ -35,15 +36,15 @@ class SitesAdapter(sites: MutableList<String>, val listener: OnSiteClickListener
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             }
             override fun afterTextChanged(s: Editable?) {
-                    listener.afterSiteChanged(s.toString(), holder.layoutPosition)
+                    listener.afterKeyChanged(s.toString(), holder.layoutPosition)
             }
         })
 
         holder.getView<ImageView>(R.id.img_add).setOnClickListener {
-            listener.onAddSite(holder.layoutPosition)
+            listener.onAddKey(holder.layoutPosition)
         }
         holder.getView<ImageView>(R.id.img_del).setOnClickListener {
-            listener.onDelSite(holder.layoutPosition)
+            listener.onDelKey(holder.layoutPosition)
         }
 
         val et = holder.getView<EditText>(R.id.et_site)
@@ -61,10 +62,10 @@ class SitesAdapter(sites: MutableList<String>, val listener: OnSiteClickListener
         }
     }
 
-    interface OnSiteClickListener {
-        fun afterSiteChanged(s: String, position: Int)
-        fun onAddSite(position: Int)
-        fun onDelSite(position: Int)
+    interface OnKeyClickListener {
+        fun afterKeyChanged(s: String, position: Int)
+        fun onAddKey(position: Int)
+        fun onDelKey(position: Int)
     }
 
 

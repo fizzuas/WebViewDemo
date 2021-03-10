@@ -37,17 +37,17 @@ class DialogEditKW() : DialogFragment() {
         val view = inflater.inflate(R.layout.dialog_input_kw, container, false)
         view.apply {
             if(key!=null){
-                view.et_kw_input.setText(key)
+                view.recy_kws.setText(key)
             }
             if(valueSite!=null){
                 view.et_site_input.setText(valueSite)
             }
             view.but_ok.setOnClickListener {
-                if (et_site_input.text.isEmpty() || et_kw_input.text.isEmpty()) {
+                if (et_site_input.text.isEmpty() || recy_kws.text.isEmpty()) {
                     ToastUtil.show(activity, "请输入关键词和网址")
                 } else {
                     listener.onEditKWOK(position,
-                        et_kw_input.text.toString(),
+                        recy_kws.text.toString(),
                         et_site_input.text.toString())
                     dismiss()
                 }

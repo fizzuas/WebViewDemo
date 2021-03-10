@@ -10,30 +10,31 @@ import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.kydw.webviewdemo.R
+import com.kydw.webviewdemo.adapter.KeysAdapter
 import com.kydw.webviewdemo.adapter.SitesAdapter
 import com.kydw.webviewdemo.util.ToastUtil
 import kotlinx.android.synthetic.main.dialog_add_key_site.view.*
 
 
-class DialogAddKeySite : DialogFragment(), SitesAdapter.OnSiteClickListener {
+class DialogAddKeySite : DialogFragment(), SitesAdapter.OnSiteClickListener,
+    KeysAdapter.OnKeyClickListener {
     private val sites = mutableListOf<String>("")
+    private val keys = mutableListOf<String>("")
+    private val keysAdapter: KeysAdapter = KeysAdapter(keys, this)
     private val siteAdapter: SitesAdapter = SitesAdapter(sites, this)
     private lateinit var listener: OnConfirmClickListener
-    lateinit var mEtKW: EditText
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
         dialog!!.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         val view = inflater.inflate(R.layout.dialog_add_key_site, container, false)
         view.apply {
             view.but_cancel.setOnClickListener { dialog!!.cancel() }
             view.but_confirm.setOnClickListener {
-                val kw = view?.et_kw_input?.text.toString()
-                if (kw != null && kw.isNotEmpty() || (sites.size == 1 && sites[0].isEmpty())) {
-                    listener.onAddKeySiteConfirm(et_kw_input.text.toString(), sites)
+                if (keys.isNotEmpty() &&sites.isNotEmpty()) {
+                    listener.onAddKeySiteConfirm(keys, sites)
                     dialog!!.cancel()
                 } else {
                     ToastUtil.show(context, "请输入关键词和网址")
@@ -41,17 +42,14 @@ class DialogAddKeySite : DialogFragment(), SitesAdapter.OnSiteClickListener {
             }
         }
 
+        view.recy_kws.apply {
+            layoutManager=LinearLayoutManager(context)
+            adapter=keysAdapter
+        }
         view.recy_sites.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = siteAdapter
         }
-        view.et_kw_input.setOnTouchListener(object : View.OnTouchListener {
-            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                view.et_kw_input.isFocusableInTouchMode = true
-                return false
-            }
-        })
-        mEtKW = view.et_kw_input
         return view
     }
 
@@ -77,24 +75,36 @@ class DialogAddKeySite : DialogFragment(), SitesAdapter.OnSiteClickListener {
     }
 
     interface OnConfirmClickListener {
-        fun onAddKeySiteConfirm(kw: String, sites: MutableList<String>)
+        fun onAddKeySiteConfirm(kw: MutableList<String>, sites: MutableList<String>)
     }
 
-    override fun afterTextChanged(s: String, position: Int) {
+    override fun afterSiteChanged(s: String, position: Int) {
         sites[position] = s
     }
 
-    override fun onAdd(position: Int) {
+    override fun onAddSite(position: Int) {
         sites.add("")
         siteAdapter.notifyDataSetChanged()
-        mEtKW.isFocusableInTouchMode = false
     }
 
-    override fun onDel(position: Int) {
+    override fun onDelSite(position: Int) {
         sites.removeAt(position)
         siteAdapter.notifyDataSetChanged()
-        mEtKW.isFocusableInTouchMode = false
 
+    }
+
+    override fun afterKeyChanged(s: String, position: Int) {
+        keys[position]=s
+    }
+
+    override fun onAddKey(position: Int) {
+        keys.add("")
+        keysAdapter.notifyDataSetChanged()
+    }
+
+    override fun onDelKey(position: Int) {
+        keys.removeAt(position)
+        keysAdapter.notifyDataSetChanged()
     }
 
 }

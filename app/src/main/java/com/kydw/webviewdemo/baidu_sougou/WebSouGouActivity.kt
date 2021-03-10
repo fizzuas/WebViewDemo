@@ -34,7 +34,7 @@ import java.util.*
 
 
 class WebSouGouActivity : AppCompatActivity() {
-
+    private var mPinIPPage = 0
     private var mLookTime: Int = 0
     private var mSwitchIPPages: Int = 0
     private var mSingleLoopMaxPages: Int = 0
@@ -89,7 +89,7 @@ class WebSouGouActivity : AppCompatActivity() {
                     activity?.setItemStartIndex(msg.arg1)
                 }
                 MSG_PAGE_INDEX -> {
-                    activity?.htmlPage(msg.arg1)
+                    activity?.setPageIndex(msg.arg1)
                 }
                 else -> {
                 }
@@ -106,17 +106,64 @@ class WebSouGouActivity : AppCompatActivity() {
         nextRequest()
     }
 
-    private fun htmlPage(pageNum: Int) {
+    private fun setPageIndex(pageIndex: Int) {
+        Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "page=" + pageIndex)
         val switchIPPages =
             getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
-        if ((switchIPPages > 0) && (pageNum % switchIPPages == 0)) {
-            Log.i(MyTag,   "$pageNum need  switch ip")
+        val pageMax=getSharedPreferences(SP_NAME,Context.MODE_PRIVATE).getInt(SINGLE_LOOP_PAGE_MAX,0)
+        Log.e(com.kydw.webviewdemo.baidu_simplify.TAG,"mPinIPPage="+mPinIPPage+",switchIPPages="+switchIPPages+",能否整除"+ (pageIndex % switchIPPages == 0))
+        if (switchIPPages > 0 && (pageIndex > mPinIPPage) && (pageIndex % switchIPPages == 0)&&(pageIndex!=pageMax)) {
+            mPinIPPage = pageIndex
+            stopWebView()
+            // 切换IP
+            if (mLoadingSwitchFlyDialog == null) {
+                mLoadingSwitchFlyDialog =
+                    JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
+                        .setWidth_Height_dp(300, 120).setCancelable(false)
+                        .create()
+            }
+            mLoadingSwitchFlyDialog?.show()
 
+            GlobalScope.launch(Dispatchers.IO) {
+                delay(2000)//因为上面reloadWebview可能还未加载完，立即切换到飞行模式会 webview会回调报错信息
+                val result0 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+                ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
+                delay(2000)
+                ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
+
+                //关掉飞行时，4G 需要慢慢打开
+                delay(2000)
+
+                for (i in 1..60) {
+                    if (NetState.hasNetWorkConnection(this@WebSouGouActivity) && isOnline()) {
+                        val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+                        break
+                    } else {
+                        Log.i(MyTag, "网络未建立，再等2秒,$i")
+                        delay(2000)
+                    }
+                }
+                delay(2000)
+                withContext(Dispatchers.Main) {
+                    mLoadingSwitchFlyDialog?.dismiss()
+                    goonWebView()
+                }
+            }
 
         }
 
+
     }
 
+    private fun goonWebView() {
+        stoped = false
+        webview.reload()
+    }
+
+    private fun stopWebView() {
+        stoped = true
+        webview.reload()
+    }
 
     private fun checkWebUpdate() {
         if (stoped) {
@@ -131,7 +178,7 @@ class WebSouGouActivity : AppCompatActivity() {
 
         Log.i(MyTag, TAG_CHECK + "curTime=" + curTime + "\t" + "lastTime=" + lastTime)
         Log.i(MyTag,
-            TAG_CHECK + "小于五分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
+            TAG_CHECK + "小于1分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
 
         // TODO: 2021/3/5 5分钟页面检查
 //        if ((curTime - lastTime) > CHECK_TIME_INTERVAL) {
@@ -191,6 +238,7 @@ class WebSouGouActivity : AppCompatActivity() {
     }
 
     private fun nextKeyWord() {
+        mPinIPPage = 0
         //切换IP
         if (mLoadingSwitchFlyDialog == null) {
             mLoadingSwitchFlyDialog =
@@ -354,8 +402,8 @@ class WebSouGouActivity : AppCompatActivity() {
                             it.isRequested = true
                         }
                     }
-                    val lookTime=if(mLookTime<1000) 1000 else mLookTime
-                    val head="var look_time=$lookTime;"
+                    val lookTime = if (mLookTime < 1000) 1000 else mLookTime
+                    val head = "var look_time=$lookTime;"
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
                     }
@@ -387,7 +435,6 @@ class WebSouGouActivity : AppCompatActivity() {
             reStartWebView()
         }
 
-
         //循环检查网页
         val runnable = object : Runnable {
             override fun run() {
@@ -403,10 +450,7 @@ class WebSouGouActivity : AppCompatActivity() {
         webview.reload()
     }
 
-    private fun stopWebView() {
-        stoped = true
-        webview.reload()
-    }
+
 
     private fun initData(intent: Intent) {
         restore()
@@ -620,7 +664,6 @@ private class InJavaScriptLocalObj(val context: Context) {
 
     @JavascriptInterface
     fun requestPageNUM(pageNum: Int) {
-        Log.i(MyTag, "pageNum==" + pageNum)
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
             val msg = Message()

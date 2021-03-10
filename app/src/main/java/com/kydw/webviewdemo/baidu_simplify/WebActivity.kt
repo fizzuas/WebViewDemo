@@ -23,6 +23,7 @@ import com.tencent.smtt.export.external.interfaces.SslErrorHandler
 import com.tencent.smtt.sdk.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_main.content
+import kotlinx.android.synthetic.main.activity_setting.*
 import kotlinx.coroutines.*
 import java.io.File
 import java.lang.StringBuilder
@@ -31,11 +32,9 @@ import java.util.*
 
 
 const val TAG_CHECK = "check exception:\t"
-const val CHECK_TIME_INTERVAL = 5 * 60 * 1000L
-
+const val CHECK_TIME_INTERVAL = 60 * 1000L
 
 class WebActivity : AppCompatActivity() {
-
     var isDealingWebError = false
     var mCircleCount = 1
     var mCircleIndex = 1
@@ -45,8 +44,9 @@ class WebActivity : AppCompatActivity() {
     private var mLoadingSwitchFlyDialog: JAlertDialog? = null
     private var mLoadingCheckNetDialog: JAlertDialog? = null
 
-    private var mPinIndex=0
-    private var mPinPage=0
+    private var mPinIndex = 0
+    private var mPinPage = 0
+    private var mPinIPPage = 0
 
     private val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://www.baidu.com/"
@@ -82,8 +82,11 @@ class WebActivity : AppCompatActivity() {
                 MSG_CHECKING_WEB_UPDATE -> {
                     activity?.checkWebUpdate()
                 }
-                MSG_PAGE_INDEX ->{
-                    activity?.setLastIndex(msg.arg1,msg.arg2)
+                MSG_PAGE_PIN_INDEX -> {
+                    activity?.setLastIndex(msg.arg1, msg.arg2)
+                }
+                MSG_PAGE_INDEX -> {
+                    activity?.setPageIndex(msg.arg1)
                 }
                 else -> {
                 }
@@ -91,24 +94,62 @@ class WebActivity : AppCompatActivity() {
         }
     }
 
-    private fun setLastIndex(pinPage: Int,pinIndex:Int) {
-        Log.i(TAG,"setIndex: pinPage"+pinPage+",pinIndex"+pinIndex)
-        mPinPage=pinPage
-        mPinIndex=pinIndex
+    private fun setPageIndex(pageIndex: Int) {
+        Log.e(TAG, "page=" + pageIndex)
+        val switchIPPages =
+            getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
+        val pageMax=getSharedPreferences(SP_NAME,Context.MODE_PRIVATE).getInt(SINGLE_LOOP_PAGE_MAX,0)
+        Log.e(TAG,"mPinIPPage="+mPinIPPage+",switchIPPages="+switchIPPages+",能否整除"+ (pageIndex % switchIPPages == 0))
+        if (switchIPPages > 0 && (pageIndex > mPinIPPage) && (pageIndex % switchIPPages == 0)&&(pageIndex!=pageMax)) {
+            mPinIPPage = pageIndex
+            stopWebView()
+            // 切换IP
+            if (mLoadingSwitchFlyDialog == null) {
+                mLoadingSwitchFlyDialog =
+                    JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
+                        .setWidth_Height_dp(300, 120).setCancelable(false)
+                        .create()
+            }
+            mLoadingSwitchFlyDialog?.show()
+
+            GlobalScope.launch(Dispatchers.IO) {
+                delay(2000)//因为上面reloadWebview可能还未加载完，立即切换到飞行模式会 webview会回调报错信息
+                val result0 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+                ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
+                delay(2000)
+                ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
+
+                //关掉飞行时，4G 需要慢慢打开
+                delay(2000)
+
+                for (i in 1..60) {
+                    if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
+                        val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
+                        break
+                    } else {
+                        Log.i(MyTag, "网络未建立，再等2秒,$i")
+                        delay(2000)
+                    }
+                }
+                delay(2000)
+                withContext(Dispatchers.Main) {
+                    mLoadingSwitchFlyDialog?.dismiss()
+                    goonWebView()
+                }
+            }
+
+        }
+
+
+    }
+
+    private fun setLastIndex(pinPage: Int, pinIndex: Int) {
+        Log.i(TAG, "setIndex: pinPage" + pinPage + ",pinIndex" + pinIndex)
+        mPinPage = pinPage
+        mPinIndex = pinIndex
     }
 
     private fun onTargetJumpSuc() {
-//        var flag = false //一个关键字下请求有一个未请求到就为true
-//        mKeyWords[mKeyWordIndex].second.forEach {
-//            if (!it.isRequested) {
-//                flag = true
-//            }
-//        }
-//        if (flag) {
-//            nextRequest()
-//        } else {
-//            nextKeyWord()
-//        }
         nextRequest()
     }
 
@@ -122,15 +163,19 @@ class WebActivity : AppCompatActivity() {
             .getLong(KEY_LOAD_PAGE_TIME, curTime)
         Log.i(MyTag, TAG_CHECK + "curTime=" + curTime + "\t" + "lastTime=" + lastTime)
         Log.i(MyTag,
-            TAG_CHECK + "小于五分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
+            TAG_CHECK + "小于1分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
 
         if ((curTime - lastTime) > CHECK_TIME_INTERVAL) {
             Log.e(MyTag, TAG_CHECK + "WEB_NO_UPDATE_5_MIN")
-            ToastUtil.show(this, "检查到网页五分钟没有更新")
+            ToastUtil.show(this, "检查到网页1分钟没有更新")
             dealWebException()
         }
     }
 
+    /*
+    * 检查到页面卡住时
+    * webview 回调 error
+    * */
     private fun dealWebException() {
         if (!isDealingWebError) {
             isDealingWebError = true
@@ -140,7 +185,7 @@ class WebActivity : AppCompatActivity() {
                     mLoadingCheckNetDialog =
                         JAlertDialog.Builder(this@WebActivity)
                             .setContentView(R.layout.dialog_waiting_net)
-                            .setText(R.id.content, if (count > 100) "请检查4G卡是否有流量" else "网络已断开...")
+                            .setText(R.id.content, "发现异常，正在重启网络")
                             .setWidth_Height_dp(300, 120).setCancelable(false)
                             .create()
                 }
@@ -149,11 +194,13 @@ class WebActivity : AppCompatActivity() {
                     count++
                     ShellUtils.execCommand(CMD.DATA_OFF, true)
                     ShellUtils.execCommand(CMD.WIFI_ON, true)
-                    delay(2000)
+                    delay(3000)
                     if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
-                        webViewGoBack()
                         isDealingWebError = false
-                        mLoadingCheckNetDialog?.dismiss()
+                        if (mLoadingCheckNetDialog!!.isShowing) {
+                            mLoadingCheckNetDialog?.dismiss()
+                        }
+                        webViewGoBack()
                         return@launch
                     }
                 } while (true)
@@ -181,6 +228,7 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun nextKeyWord() {
+        mPinIPPage = 0
         //切换IP
         if (mLoadingSwitchFlyDialog == null) {
             mLoadingSwitchFlyDialog =
@@ -261,51 +309,6 @@ class WebActivity : AppCompatActivity() {
         clearCache()
         webview.loadUrl(baiduIndexUrl)
 
-//        //切换IP
-//        if (mLoadingDbDialog == null) {
-//            mLoadingDbDialog =
-//                JAlertDialog.Builder(this).setContentView(R.layout.dialog_waitting_fly)
-//                    .setWidth_Height_dp(300, 120).setCancelable(isRoot)
-//                    .create()
-//        }
-//        mLoadingDbDialog?.show()
-//
-//        // switchIP
-//        GlobalScope.launch(Dispatchers.IO) {
-//            val result0 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-//            if (result0?.successMsg != null) {
-//                val sucMsg0 = result0.successMsg!!
-//                Log.i(MyTag, "result0.sucMsg0=$sucMsg0, ")
-//                saveIP(sucMsg0)
-//            }
-//
-//            ShellUtils.execCommand(CMD.AIRPLANE_MODE_ON, isRoot)
-//            delay(2000)
-//            ShellUtils.execCommand(CMD.AIRPLANE_MODE_OFF, isRoot)
-//
-//            //关掉飞行时，4G 需要慢慢打开
-//            delay(2000)
-//
-//            for (i in 1..60) {
-//                if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
-//                    val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
-//                    if (result1?.successMsg != null) {
-//                        Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
-//                        appendFile(result1.successMsg + "\n\n",
-//                            getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
-//                            this@WebActivity)
-//                    }
-//                    break
-//                } else {
-//                    Log.i(MyTag, "网络未建立，再等2秒,$i")
-//                    delay(2000)
-//                }
-//            }
-//            delay(2000)
-//            withContext(Dispatchers.Main) {
-//
-//            }
-//        }
     }
 
     private fun saveIP(sucMsg0: String) {
@@ -326,29 +329,10 @@ class WebActivity : AppCompatActivity() {
 
         initData(intent)
 
-//        webview = WebView(applicationContext)
-//        val lp = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-//        webview.layoutParams = lp
-//        content.addView(webview)
-
-
         webview.webViewClient = object : WebViewClient() {
-//            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-//                if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
-//                    return false
-//                } else try {
-//                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-//                    view!!.context.startActivity(intent)
-//                    return true
-//                } catch (e: Exception) {
-//                    Log.i(TAG, "shouldOverrideUrlLoading Exception:$e")
-//                    return true
-//                }
-//            }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                Log.i(TAG, "onPageStarted = $url")
 
             }
 
@@ -359,6 +343,8 @@ class WebActivity : AppCompatActivity() {
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
+                Log.i(TAG, "onPageFinished = $url")
+
                 super.onPageFinished(view, url)
                 if (stoped) {
                     return
@@ -435,7 +421,8 @@ class WebActivity : AppCompatActivity() {
                         val pageMax = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
                             SINGLE_LOOP_PAGE_MAX,
                             SINGLE_LOOP_PAGE_MAX_DEFAULT)
-                        val head = "var targetSites=$jsList; var page_max=$pageMax;var pinPage=$mPinPage; var pinIndex=$mPinIndex;"
+                        val head =
+                            "var targetSites=$jsList; var page_max=$pageMax;var pinPage=$mPinPage; var pinIndex=$mPinIndex;"
                         Log.e(MyTag, "jsList head=" + head)
                         view.loadUrl("javascript:$head$jsToNext")
 
@@ -461,22 +448,10 @@ class WebActivity : AppCompatActivity() {
         webview.keepScreenOn = true
 
         but_stop.setOnClickListener {
-            stoped = true
-            webview.reload()
-//            webview.reload()
-//            if (stoped) {
-//                //点击了继续
-//                but.text = "暂停"
-//            } else {
-//                //点击了暂停
-//                but.text = "正在暂停..."
-//                webview.reload()
-//            }
-//            stoped = !stoped
+            stopWebView()
         }
         but_go.setOnClickListener {
-            stoped = false
-            webview.reload()
+            goonWebView()
         }
 
 
@@ -490,9 +465,19 @@ class WebActivity : AppCompatActivity() {
         handler.postDelayed(runnable, CHECK_TIME_INTERVAL)
     }
 
+    private fun goonWebView() {
+        stoped = false
+        webview.reload()
+    }
+
+    private fun stopWebView() {
+        stoped = true
+        webview.reload()
+    }
+
     private fun initData(intent: Intent) {
         val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
-        mCircleCount = intent.getIntExtra(CIRCLE_COUNT, 0)
+        mCircleCount = getSharedPreferences(SP_NAME,Context.MODE_PRIVATE).getInt(LOOP_COUNT,0)
 
         list!!.forEach {
             Log.i(MyTag, "initData\t" + it.toString())
@@ -607,8 +592,6 @@ class WebActivity : AppCompatActivity() {
             cookieSyncManager.sync()
         }
     }
-
-
 }
 
 
@@ -670,20 +653,30 @@ private class InJavaScriptLocalObj(val context: Context) {
         val y1 = 1230
         Log.i(MyTag, "$x0,$y0;$x1,$y1")
         GlobalScope.launch {
-            val result = ShellUtils.execSwipe(x0, y0, x1, y1, 500)
+            val result = ShellUtils.execSwipe(x0, y0, x1, y1, 700)
             Log.i(MyTag, result.toString())
         }
     }
 
     @JavascriptInterface
-    fun pinIndex(pinPage:Int,pinIndex: Int) {
-        Log.i(TAG, "pinPage=$pinPage;"+"pinIndex=$pinIndex")
+    fun pinIndex(pinPage: Int, pinIndex: Int) {
+        Log.i(TAG, "pinPage=$pinPage;" + "pinIndex=$pinIndex")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
             val msg = Message()
-            msg.what = MSG_PAGE_INDEX
+            msg.what = MSG_PAGE_PIN_INDEX
             msg.arg1 = pinPage
-            msg.arg2=pinIndex
+            msg.arg2 = pinIndex
+            (context as WebActivity).handler.sendMessage(msg)
+        }
+    }
+
+    @JavascriptInterface
+    fun pageIndex(page: Int) {
+        GlobalScope.launch(Dispatchers.Main) {
+            val msg = Message()
+            msg.what = MSG_PAGE_INDEX
+            msg.arg1 = page
             (context as WebActivity).handler.sendMessage(msg)
         }
     }
