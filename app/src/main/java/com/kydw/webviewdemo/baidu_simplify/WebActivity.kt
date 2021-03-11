@@ -192,8 +192,8 @@ class WebActivity : AppCompatActivity() {
                 mLoadingCheckNetDialog?.show()
                 do {
                     count++
-                    ShellUtils.execCommand(CMD.DATA_OFF, true)
-                    ShellUtils.execCommand(CMD.WIFI_ON, true)
+                    ShellUtils.execCommand(CMD.DATA_ON, true)
+                    ShellUtils.execCommand(CMD.WIFI_OFF, true)
                     delay(3000)
                     if (NetState.hasNetWorkConnection(this@WebActivity) && isOnline()) {
                         isDealingWebError = false

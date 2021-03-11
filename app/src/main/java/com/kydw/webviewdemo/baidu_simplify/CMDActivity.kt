@@ -55,14 +55,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 //        Model("钥匙机", "baike.baidu.com"),
 //        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
 //        Model("手机", "www.oneplus.com")
-//        Model("vt.thaniyaa.com", "vt.thaniyaa.com", SITE),
-//        Model("vv.thaniyaa.com", "vv.thaniyaa.com", SITE),
-//        Model("kk.pewdo.com", "kk.pewdo.com", SITE),
-//        Model("1c.pewdo.com", "1c.pewdo.com", SITE),
-//        Model("2c.pewdo.com", "2c.pewdo.com", SITE),
-//        Model("3c.pewdo.com", "3c.pewdo.com", SITE),
-//        Model("4c.pewdo.com", "4c.pewdo.com", SITE),
-//        Model("5c.pewdo.com", "5c.pewdo.com", SITE)
+
     )
 
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
@@ -123,14 +116,17 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
                 return@setOnClickListener
             }
 
-//            val statue = NetState.getNetWorkStatus(this)
-//            val isOn = NetState.hasNetWorkConnection(this)
-//            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
-//            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
+//          4G
+            val statue = NetState.getNetWorkStatus(this)
+            val isOn = NetState.hasNetWorkConnection(this)
+            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
+            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
             startActivity(intent)
-//            } else {
-//                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
-//            }
+            } else {
+                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
+            }
+
+//            startActivity(intent)
         }
 
         but_sougou.setOnClickListener {
@@ -170,12 +166,17 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
             val statue = NetState.getNetWorkStatus(this)
             val isOn = NetState.hasNetWorkConnection(this)
             Log.e(MyTag, "isON" + isOn + ";statue" + statue)
-//            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
-            if (isOn && statue == NetState.NETWORK_WIFI) {
+
+            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
                 startActivity(intent)
             } else {
                 ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
             }
+//            if (isOn && statue == NetState.NETWORK_WIFI) {
+//                startActivity(intent)
+//            } else {
+//                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
+//            }
         }
 
         but_addkw.setOnClickListener {

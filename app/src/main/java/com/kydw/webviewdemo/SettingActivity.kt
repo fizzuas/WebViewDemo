@@ -16,7 +16,6 @@ class SettingActivity : AppCompatActivity() {
 
     }
 
-
     override fun onStart() {
         super.onStart()
         restore()

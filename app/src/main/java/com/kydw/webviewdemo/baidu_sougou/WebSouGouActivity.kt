@@ -32,6 +32,7 @@ import java.lang.StringBuilder
 import java.lang.ref.WeakReference
 import java.util.*
 
+const val SOUGOU_CHECK_TIME_INTERVAL = 3 * 60 * 1000L
 
 class WebSouGouActivity : AppCompatActivity() {
     private var mPinIPPage = 0
@@ -51,6 +52,7 @@ class WebSouGouActivity : AppCompatActivity() {
     val isRoot = true
     private var mLoadingSwitchFlyDialog: JAlertDialog? = null
     private var mLoadingCheckNetDialog: JAlertDialog? = null
+    private var mShowSetInfoDialog: JAlertDialog? = null
 
     private val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://wap.sogou.com/"
@@ -58,6 +60,13 @@ class WebSouGouActivity : AppCompatActivity() {
     val mKeyWords =
         mutableListOf<Pair<String, MutableList<TUrl>>>()
     var mKeyWordIndex = 0
+
+    var mPageIndex = 0
+
+    var mLastCircleIndex = 0
+    var mLastKeyWordIndex = 0
+    var mLastPageIndex = 0
+
 
     val handler = MyHandler(this)
 
@@ -108,11 +117,15 @@ class WebSouGouActivity : AppCompatActivity() {
 
     private fun setPageIndex(pageIndex: Int) {
         Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "page=" + pageIndex)
+        mPageIndex = pageIndex
+
         val switchIPPages =
             getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
-        val pageMax=getSharedPreferences(SP_NAME,Context.MODE_PRIVATE).getInt(SINGLE_LOOP_PAGE_MAX,0)
-        Log.e(com.kydw.webviewdemo.baidu_simplify.TAG,"mPinIPPage="+mPinIPPage+",switchIPPages="+switchIPPages+",能否整除"+ (pageIndex % switchIPPages == 0))
-        if (switchIPPages > 0 && (pageIndex > mPinIPPage) && (pageIndex % switchIPPages == 0)&&(pageIndex!=pageMax)) {
+        val pageMax =
+            getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SINGLE_LOOP_PAGE_MAX, 0)
+        Log.e(com.kydw.webviewdemo.baidu_simplify.TAG,
+            "mPinIPPage=" + mPinIPPage + ",switchIPPages=" + switchIPPages + "是否需要切换IP=" + (switchIPPages > 0 && (pageIndex > mPinIPPage) && (switchIPPages > 0) && (pageIndex % switchIPPages == 0) && (pageIndex != pageMax)))
+        if (switchIPPages > 0 && (pageIndex > mPinIPPage) && (switchIPPages > 0) && (pageIndex % switchIPPages == 0) && (pageIndex != pageMax)) {
             mPinIPPage = pageIndex
             stopWebView()
             // 切换IP
@@ -169,23 +182,20 @@ class WebSouGouActivity : AppCompatActivity() {
         if (stoped) {
             return
         }
-        val curTime = Date().time
-        val lastTime = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
-            .getLong(KEY_LOAD_PAGE_TIME, curTime)
-        val lastIndex = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
-            KEY_LOAD_CIRCLE_LAST_INDEX,
-            0)
 
-        Log.i(MyTag, TAG_CHECK + "curTime=" + curTime + "\t" + "lastTime=" + lastTime)
-        Log.i(MyTag,
-            TAG_CHECK + "小于1分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
+        if (mLastCircleIndex == mCircleIndex && mLastKeyWordIndex == mKeyWordIndex && mLastPageIndex == mPageIndex) {
+            ToastUtil.showShort(this, "检擦到页面卡住一分钟")
+            Log.i(MyTag, "检测到 1 分钟还有同一个循环里同个关键词，同一个页面")
+            goonWebView()
+        } else {
+            Log.i(MyTag, "2min  页面有变化")
+        }
 
-        // TODO: 2021/3/5 5分钟页面检查
-//        if ((curTime - lastTime) > CHECK_TIME_INTERVAL) {
-//            Log.e(MyTag, TAG_CHECK + "WEB_NO_UPDATE_5_MIN")
-//            ToastUtil.show(this, "检查到网页五分钟没有更新")
-//            dealWebException()
-//        }
+        mLastCircleIndex = mCircleIndex
+        mLastKeyWordIndex = mKeyWordIndex
+        mLastPageIndex = mPageIndex
+
+
     }
 
     private fun dealWebException() {
@@ -204,8 +214,8 @@ class WebSouGouActivity : AppCompatActivity() {
                 mLoadingCheckNetDialog?.show()
                 do {
                     count++
-                    ShellUtils.execCommand(CMD.DATA_OFF, true)
-                    ShellUtils.execCommand(CMD.WIFI_ON, true)
+                    ShellUtils.execCommand(CMD.DATA_ON, true)
+                    ShellUtils.execCommand(CMD.WIFI_OFF, true)
                     delay(2000)
                     if (NetState.hasNetWorkConnection(this@WebSouGouActivity) && isOnline()) {
                         webViewGoBack()
@@ -353,6 +363,7 @@ class WebSouGouActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 if (stoped) {
+                    webview.loadUrl("javascript:scrollTo(0,0);")
                     return
                 }
                 Log.i(MyTag, "onPageFinished = $url")
@@ -392,7 +403,7 @@ class WebSouGouActivity : AppCompatActivity() {
                     }
                     jsList.append("]")
                     val head =
-                        "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;"
+                        "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;var ip_page=$mSwitchIPPages;"
                     Log.e(MyTag, "jsList head=" + head)
                     view!!.loadUrl("javascript:$head$jsToNext")
                 } else {
@@ -435,21 +446,21 @@ class WebSouGouActivity : AppCompatActivity() {
             reStartWebView()
         }
 
+
         //循环检查网页
         val runnable = object : Runnable {
             override fun run() {
                 handler.sendEmptyMessage(MSG_CHECKING_WEB_UPDATE)
-                handler.postDelayed(this, CHECK_TIME_INTERVAL)
+                handler.postDelayed(this, SOUGOU_CHECK_TIME_INTERVAL)
             }
         }
-        handler.postDelayed(runnable, CHECK_TIME_INTERVAL)
+        handler.postDelayed(runnable, SOUGOU_CHECK_TIME_INTERVAL)
     }
 
     private fun reStartWebView() {
         stoped = false
         webview.reload()
     }
-
 
 
     private fun initData(intent: Intent) {

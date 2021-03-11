@@ -33,6 +33,15 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
 
+        <Button
+            android:id="@+id/but_show_set"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:text="显示设置信息"
+            app:layout_constraintEnd_toStartOf="@id/but_stop"
+            app:layout_constraintTop_toTopOf="@id/but_go"/>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 

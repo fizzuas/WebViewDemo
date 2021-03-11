@@ -152,7 +152,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
-        android:text="浏览多少页面换IP"
+        android:text="浏览多少页面切换IP"
         android:textColor="#200"
         android:textSize="17sp"
         app:layout_constraintBottom_toBottomOf="@id/view3"
