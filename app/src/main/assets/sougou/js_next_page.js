@@ -48,7 +48,7 @@ function logNext() {
 }
 
 var count = 0;
-var waitTime = 500;
+var waitTime = 1000;
 function checkLoadNext() {
     var nodeNext = document.getElementById("ajax_next_page");
     var pn = parseInt(nodeNext.getAttribute("pagenumpara"));
@@ -69,7 +69,7 @@ function checkLoadNext() {
             }
         }
     } else {
-        if (count < 10) {
+        if (count < 40) {
             count++;
             console.log((parseInt(pn) ) + "页加载 未完成，已等待" + ((count + 1) * waitTime) + "ms");
             setTimeout(checkLoadNext, waitTime);

@@ -7,8 +7,8 @@ import android.graphics.Canvas
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -20,14 +20,16 @@ import com.chad.library.adapter.base.viewholder.BaseViewHolder
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kydw.webviewdemo.*
-import com.kydw.webviewdemo.adapter.*
+import com.kydw.webviewdemo.adapter.Model
+import com.kydw.webviewdemo.adapter.ModelAdapter
+import com.kydw.webviewdemo.adapter.SITE
 import com.kydw.webviewdemo.baidu_sougou.WebSouGouActivity
+import com.kydw.webviewdemo.baidu_toutiao.WebToutTiaoActivity
 import com.kydw.webviewdemo.dialog.*
 import com.kydw.webviewdemo.network.UpdateService
 import com.kydw.webviewdemo.network.UploadFileInfo
 import com.kydw.webviewdemo.network.UploadFileResult
 import com.kydw.webviewdemo.util.*
-import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import com.zhy.http.okhttp.OkHttpUtils
 import com.zhy.http.okhttp.callback.FileCallBack
 import kotlinx.android.synthetic.main.activity_c_m_d.*
@@ -36,22 +38,32 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.angmarch.views.NiceSpinner
+import org.angmarch.views.OnSpinnerItemSelectedListener
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
+import java.util.*
 
 
 const val MyTag: String = "oyx"
+
+enum class BrowserType(val i: String) {
+    BaiDu("百度"),
+    SouGou("搜狗"),
+    TouTiao("头条"),
+    B360("360")
+}
 
 class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener,
     DialogInputSite.OnOKListener, DialogEditKW.OnKW2Listener, DialogEditSite.OnSite2Listener {
 
 
     var models = mutableListOf<Model>(
-//        Model("钥匙机", "www.kydz-wx.com")
+        Model("钥匙机", "www.kydz-wx.com")
 //        Model("钥匙机", "baike.baidu.com"),
 //        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
 //        Model("手机", "www.oneplus.com")
@@ -64,6 +76,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
     private val mDialogAddKeySite: DialogAddKeySite = DialogAddKeySite()
     private val mStartDialog: DialogInputSite = DialogInputSite()
     var intentFilter = IntentFilter("android.intent.action.AIRPLANE_MODE")
+    private var mSearchType: String = BrowserType.BaiDu.i
 
     var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -82,102 +95,6 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         PermissionUtil.askForRequiredPermissions(this)
 
         registerReceiver(receiver, intentFilter)
-        but_baidu.setOnClickListener {
-            val intent = Intent(this, WebActivity::class.java)
-            models.forEach {
-                Log.e("oyx", "but_tonext" + it.toString())
-            }
-
-            intent.putExtra(KEYWORD_SITES, models.toTypedArray())
-
-            if (models.size < 1) {
-                ToastUtil.show(this, "请输入关键词或网址")
-                return@setOnClickListener
-            }
-
-            //root permission
-            if (!ShellUtils.checkRootPermission()) {
-                AlertDialog.Builder(this).setTitle("请给应用授予root权限：")
-                    .setMessage("操作：" +
-                            "点击root权限通知 或者\n" +
-                            "设置->授权管理->Root权限管理->打开${appName(this)}权限").setCancelable(true)
-                    .setPositiveButton("确定", object : DialogInterface.OnClickListener {
-                        override fun onClick(dialog: DialogInterface?, which: Int) {
-                            startActivity(Intent(Settings.ACTION_SETTINGS));//直接跳转到设置界面
-                        }
-                    })
-                    .create().show()
-                return@setOnClickListener
-            }
-
-            // sd permission
-            if (!PermissionUtil.hasRequiredPermissions(this)) {
-                PermissionUtil.askForRequiredPermissions(this)
-                return@setOnClickListener
-            }
-
-//          4G
-            val statue = NetState.getNetWorkStatus(this)
-            val isOn = NetState.hasNetWorkConnection(this)
-            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
-            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
-            startActivity(intent)
-            } else {
-                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
-            }
-
-//            startActivity(intent)
-        }
-
-        but_sougou.setOnClickListener {
-            val intent = Intent(this, WebSouGouActivity::class.java)
-            models.forEach {
-                Log.e("oyx", "but_tonext" + it.toString())
-            }
-
-            intent.putExtra(KEYWORD_SITES, models.toTypedArray())
-
-            if (models.size < 1) {
-                ToastUtil.show(this, "请输入关键词或网址")
-                return@setOnClickListener
-            }
-
-            //root permission
-            if (!ShellUtils.checkRootPermission()) {
-                AlertDialog.Builder(this).setTitle("请给应用授予root权限：")
-                    .setMessage("操作：" +
-                            "点击root权限通知 或者\n" +
-                            "设置->授权管理->Root权限管理->打开${appName(this)}权限").setCancelable(true)
-                    .setPositiveButton("确定", object : DialogInterface.OnClickListener {
-                        override fun onClick(dialog: DialogInterface?, which: Int) {
-                            startActivity(Intent(Settings.ACTION_SETTINGS));//直接跳转到设置界面
-                        }
-                    })
-                    .create().show()
-                return@setOnClickListener
-            }
-
-            // sd permission
-            if (!PermissionUtil.hasRequiredPermissions(this)) {
-                PermissionUtil.askForRequiredPermissions(this)
-                return@setOnClickListener
-            }
-
-            val statue = NetState.getNetWorkStatus(this)
-            val isOn = NetState.hasNetWorkConnection(this)
-            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
-
-            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
-                startActivity(intent)
-            } else {
-                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
-            }
-//            if (isOn && statue == NetState.NETWORK_WIFI) {
-//                startActivity(intent)
-//            } else {
-//                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
-//            }
-        }
 
         but_addkw.setOnClickListener {
             mDialogAddKeySite.show(supportFragmentManager, DIALOG_INPUT)
@@ -207,6 +124,29 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
             startActivity(intent)
         }
 
+        //spinner
+
+        val niceSpinner: NiceSpinner = findViewById<View>(R.id.nice_spinner) as NiceSpinner
+        val dataset: List<String> = LinkedList(Arrays.asList(BrowserType.BaiDu.i,
+            BrowserType.SouGou.i,
+            BrowserType.TouTiao.i,
+            BrowserType.B360.i))
+        niceSpinner.attachDataSource(dataset)
+        niceSpinner.setOnSpinnerItemSelectedListener(object : OnSpinnerItemSelectedListener {
+            override fun onItemSelected(
+                parent: NiceSpinner?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                val item = parent!!.getItemAtPosition(position)
+                Log.i(MyTag, "item=$item")
+                mSearchType = item.toString()
+            }
+        })
+
+
+        but_sou.setOnClickListener { startSearch(mSearchType) }
     }
 
     override fun onStop() {
@@ -402,7 +342,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
     override fun onEditSiteOK(position: Int, site: String) {
         Log.e("oyx", "position=$position,\tsite$site")
         models[position].keyword = site
-        models[position].site =  if (site.startsWith("site:")) site.substring(5) else site
+        models[position].site = if (site.startsWith("site:")) site.substring(5) else site
         modelAdapter.notifyDataSetChanged()
     }
 
@@ -423,6 +363,59 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         modelAdapter.notifyDataSetChanged()
     }
 
+    private fun startSearch(type: String) {
+        val intent: Intent =
+            when (type) {
+                BrowserType.SouGou.i -> Intent(this, WebSouGouActivity::class.java)
+                BrowserType.BaiDu.i -> Intent(this, BaiduMWebActivity::class.java)
+                BrowserType.TouTiao.i -> Intent(this, WebToutTiaoActivity::class.java)
+                else -> Intent(this, WebActivity::class.java)
+            }
+        models.forEach {
+            Log.e("oyx", "but_tonext" + it.toString())
+        }
+
+        intent.putExtra(KEYWORD_SITES, models.toTypedArray())
+
+        if (models.size < 1) {
+            ToastUtil.show(this, "请输入关键词或网址")
+            return
+        }
+
+        //root permission
+//        if (!ShellUtils.checkRootPermission()) {
+//            AlertDialog.Builder(this).setTitle("请给应用授予root权限：")
+//                .setMessage("操作：" +
+//                        "点击root权限通知 或者\n" +
+//                        "设置->授权管理->Root权限管理->打开${appName(this)}权限").setCancelable(true)
+//                .setPositiveButton("确定", object : DialogInterface.OnClickListener {
+//                    override fun onClick(dialog: DialogInterface?, which: Int) {
+//                        startActivity(Intent(Settings.ACTION_SETTINGS));//直接跳转到设置界面
+//                    }
+//                })
+//                .create().show()
+//            return
+//        }
+
+        // sd permission
+        if (!PermissionUtil.hasRequiredPermissions(this)) {
+            PermissionUtil.askForRequiredPermissions(this)
+            return
+        }
+
+//          4G
+//            val statue = NetState.getNetWorkStatus(this)
+//            val isOn = NetState.hasNetWorkConnection(this)
+//            Log.e(MyTag, "isON" + isOn + ";statue" + statue)
+//            if (isOn && statue == NetState.NETWORK_CLASS_4_G) {
+//            startActivity(intent)
+//            } else {
+//                ToastUtil.show(this@CMDActivity, "请关闭wifi,打开4G,并能上网")
+//            }
+
+//             WIFI
+        startActivity(intent)
+    }
 
 }
 

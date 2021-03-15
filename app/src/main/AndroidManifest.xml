@@ -19,15 +19,7 @@
         android:usesCleartextTraffic="true">
         <activity android:name=".test.TestDialogActivity" />
         <activity android:name=".test.TestCoroutinesActivity" />
-        <activity android:name=".baidu_sougou.CMDSouGouActivity">
 
-<!--             <intent-filter>-->
-<!--             <action android:name="android.intent.action.MAIN" />-->
-
-
-<!--             <category android:name="android.intent.category.LAUNCHER" />-->
-<!--             </intent-filter>-->
-        </activity>
         <activity android:name=".baidu_sougou.WebSouGouActivity" />
         <activity
             android:name=".baidu_simplify.CMDActivity"
@@ -61,6 +53,7 @@
 <!--            <category android:name="android.intent.category.LAUNCHER" />-->
 <!--        </intent-filter>-->
         </activity>
+        <activity android:name=".baidu_toutiao.WebToutTiaoActivity"/>
     </application>
 
 </manifest>

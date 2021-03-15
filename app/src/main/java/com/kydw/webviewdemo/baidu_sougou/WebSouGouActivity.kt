@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import com.kydw.webviewdemo.*
 import com.kydw.webviewdemo.adapter.Model
-import com.kydw.webviewdemo.baidu_simplify.CHECK_TIME_INTERVAL
 import com.kydw.webviewdemo.baidu_simplify.MyTag
 import com.kydw.webviewdemo.baidu_simplify.TAG_CHECK
 import com.kydw.webviewdemo.bean.TUrl
@@ -32,7 +31,7 @@ import java.lang.StringBuilder
 import java.lang.ref.WeakReference
 import java.util.*
 
-const val SOUGOU_CHECK_TIME_INTERVAL = 3 * 60 * 1000L
+const val UC_CHECK_TIME_INTERVAL = 3 * 60 * 1000L
 
 class WebSouGouActivity : AppCompatActivity() {
     private var mPinIPPage = 0
@@ -214,8 +213,8 @@ class WebSouGouActivity : AppCompatActivity() {
                 mLoadingCheckNetDialog?.show()
                 do {
                     count++
-                    ShellUtils.execCommand(CMD.DATA_ON, true)
-                    ShellUtils.execCommand(CMD.WIFI_OFF, true)
+                    ShellUtils.execCommand(CMD.DATA_OFF, true)
+                    ShellUtils.execCommand(CMD.WIFI_ON, true)
                     delay(2000)
                     if (NetState.hasNetWorkConnection(this@WebSouGouActivity) && isOnline()) {
                         webViewGoBack()
@@ -451,10 +450,10 @@ class WebSouGouActivity : AppCompatActivity() {
         val runnable = object : Runnable {
             override fun run() {
                 handler.sendEmptyMessage(MSG_CHECKING_WEB_UPDATE)
-                handler.postDelayed(this, SOUGOU_CHECK_TIME_INTERVAL)
+                handler.postDelayed(this, UC_CHECK_TIME_INTERVAL)
             }
         }
-        handler.postDelayed(runnable, SOUGOU_CHECK_TIME_INTERVAL)
+        handler.postDelayed(runnable, UC_CHECK_TIME_INTERVAL)
     }
 
     private fun reStartWebView() {

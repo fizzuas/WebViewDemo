@@ -82,24 +82,22 @@
         app:layout_constraintTop_toBottomOf="@+id/recy_configs" />
 
     <Button
-        android:id="@+id/but_baidu"
+        android:id="@+id/but_sou"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="百度"
+        android:text="开始搜索"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
-        android:id="@+id/but_sougou"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="5dp"
-        android:text="搜狗"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/but_baidu"
 
-        />
+    <org.angmarch.views.NiceSpinner
+        android:id="@+id/nice_spinner"
+        android:layout_width="150dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@+id/but_sou"
+        app:layout_constraintRight_toLeftOf="@+id/but_sou"
+        app:layout_constraintTop_toTopOf="@id/but_sou" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
