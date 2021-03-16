@@ -23,7 +23,9 @@ import com.kydw.webviewdemo.*
 import com.kydw.webviewdemo.adapter.Model
 import com.kydw.webviewdemo.adapter.ModelAdapter
 import com.kydw.webviewdemo.adapter.SITE
+import com.kydw.webviewdemo.baidu_360.Web360Activity
 import com.kydw.webviewdemo.baidu_sougou.WebSouGouActivity
+import com.kydw.webviewdemo.baidu_sougou_wx.WebSouGouWXActivity
 import com.kydw.webviewdemo.baidu_toutiao.WebToutTiaoActivity
 import com.kydw.webviewdemo.dialog.*
 import com.kydw.webviewdemo.network.UpdateService
@@ -54,8 +56,9 @@ const val MyTag: String = "oyx"
 enum class BrowserType(val i: String) {
     BaiDu("百度"),
     SouGou("搜狗"),
-    TouTiao("头条"),
-    B360("360")
+//    TouTiao("头条"),
+//    B360("360"),
+    SouGou_WX("搜狗(WX)")
 }
 
 class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener,
@@ -129,9 +132,11 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         val niceSpinner: NiceSpinner = findViewById<View>(R.id.nice_spinner) as NiceSpinner
         val dataset: List<String> = LinkedList(Arrays.asList(BrowserType.BaiDu.i,
             BrowserType.SouGou.i,
-            BrowserType.TouTiao.i,
-            BrowserType.B360.i))
-        niceSpinner.attachDataSource(dataset)
+//            BrowserType.TouTiao.i,
+//            BrowserType.B360.i),
+            BrowserType.SouGou_WX.i
+        ))
+                niceSpinner.attachDataSource(dataset)
         niceSpinner.setOnSpinnerItemSelectedListener(object : OnSpinnerItemSelectedListener {
             override fun onItemSelected(
                 parent: NiceSpinner?,
@@ -368,7 +373,9 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
             when (type) {
                 BrowserType.SouGou.i -> Intent(this, WebSouGouActivity::class.java)
                 BrowserType.BaiDu.i -> Intent(this, BaiduMWebActivity::class.java)
-                BrowserType.TouTiao.i -> Intent(this, WebToutTiaoActivity::class.java)
+//                BrowserType.TouTiao.i -> Intent(this, WebToutTiaoActivity::class.java)
+//                BrowserType.B360.i -> Intent(this, Web360Activity::class.java)
+                BrowserType.SouGou_WX.i->Intent(this, WebSouGouWXActivity::class.java)
                 else -> Intent(this, WebActivity::class.java)
             }
         models.forEach {

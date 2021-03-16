@@ -54,6 +54,8 @@
 <!--        </intent-filter>-->
         </activity>
         <activity android:name=".baidu_toutiao.WebToutTiaoActivity"/>
+        <activity android:name=".baidu_360.Web360Activity"/>
+        <activity android:name=".baidu_sougou_wx.WebSouGouWXActivity"/>
     </application>
 
 </manifest>
