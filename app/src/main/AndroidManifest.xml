@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.kydw.webviewdemo">
+    package="com.sogou.activity">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -17,12 +17,12 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".test.TestDialogActivity" />
-        <activity android:name=".test.TestCoroutinesActivity" />
+        <activity android:name="com.sogou.activity.test.TestDialogActivity" />
+        <activity android:name="com.sogou.activity.test.TestCoroutinesActivity" />
 
-        <activity android:name=".baidu_sougou.WebSouGouActivity" />
+        <activity android:name="com.sogou.activity.baidu_sougou.WebSouGouActivity" />
         <activity
-            android:name=".baidu_simplify.CMDActivity"
+            android:name="com.sogou.activity.baidu_simplify.CMDActivity"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,31 +31,31 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ImgActivity"
+            android:name="com.sogou.activity.ImgActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".baidu_simplify.WebActivity"
+            android:name="com.sogou.activity.baidu_simplify.WebActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".baidu_simplify.BaiduMWebActivity"
+            android:name="com.sogou.activity.baidu_simplify.BaiduMWebActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".test.TesNetActivity" />
+        <activity android:name="com.sogou.activity.test.TesNetActivity" />
         <activity
-            android:name=".test.TestAgentActivity"
+            android:name="com.sogou.activity.test.TestAgentActivity"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".test.TestAutoSwipeByShellActivity"
+            android:name="com.sogou.activity.test.TestAutoSwipeByShellActivity"
             android:screenOrientation="portrait" />
-        <activity android:name=".SettingActivity">
+        <activity android:name="com.sogou.activity.SettingActivity">
 <!--        <intent-filter>-->
 <!--            <action android:name="android.intent.action.MAIN" />-->
 
 <!--            <category android:name="android.intent.category.LAUNCHER" />-->
 <!--        </intent-filter>-->
         </activity>
-        <activity android:name=".baidu_toutiao.WebToutTiaoActivity"/>
-        <activity android:name=".baidu_360.Web360Activity"/>
-        <activity android:name=".baidu_sougou_wx.WebSouGouWXActivity"/>
+        <activity android:name="com.sogou.activity.baidu_toutiao.WebToutTiaoActivity"/>
+        <activity android:name="com.sogou.activity.baidu_360.Web360Activity"/>
+        <activity android:name="com.sogou.activity.baidu_sougou_wx.WebSouGouWXActivity"/>
     </application>
 
 </manifest>

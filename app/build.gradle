@@ -8,7 +8,7 @@ android {
     buildToolsVersion "29.0.3"
 
     defaultConfig {
-        applicationId "com.kydw.webviewdemo"
+        applicationId "com.sogou.activity.src"
         minSdkVersion 22
         targetSdkVersion 29
         versionCode 11
@@ -76,5 +76,6 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.3.1'
     implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
     implementation 'com.github.anzaizai:EasySwipeMenuLayout:1.1.4'
+    implementation 'com.github.arcadefire:nice-spinner:1.4.5'
 
 }
