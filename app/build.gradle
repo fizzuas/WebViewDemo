@@ -8,13 +8,18 @@ android {
     buildToolsVersion "29.0.3"
 
     defaultConfig {
-        applicationId "com.sogou.activity.src"
+        applicationId "com.kydw.webviewdemo"
         minSdkVersion 22
         targetSdkVersion 29
-        versionCode 11
-        versionName "2.1"
+        versionCode 12
+        versionName "2.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            // 设置支持的SO库架构
+            abiFilters 'armeabi' //, 'x86', 'armeabi-v7a', 'x86_64', 'arm64-v8a'
+        }
     }
 
     buildTypes {
@@ -77,5 +82,9 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
     implementation 'com.github.anzaizai:EasySwipeMenuLayout:1.1.4'
     implementation 'com.github.arcadefire:nice-spinner:1.4.5'
+
+    //bugly
+    compile 'com.tencent.bugly:crashreport:latest.release' //其中latest.release指代最新Bugly SDK版本号，也可以指定明确的版本号，例如2.1.9
+    compile 'com.tencent.bugly:nativecrashreport:latest.release' //其中latest.release指代最新Bugly NDK版本号，也可以指定明确的版本号，例如3.0
 
 }
