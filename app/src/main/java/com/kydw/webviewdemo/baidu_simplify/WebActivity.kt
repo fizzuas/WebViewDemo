@@ -385,7 +385,7 @@ class WebActivity : AppCompatActivity() {
                     val spLookTime =
                         getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(PAGE_LOOP_TIME,
                             0)
-                    val lookTime = if (spLookTime < 1000) 1000 else spLookTime
+                    val lookTime = if (spLookTime < 5) 5000 else (spLookTime*1000)
                     val head = "var look_time=$lookTime;"
 
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {

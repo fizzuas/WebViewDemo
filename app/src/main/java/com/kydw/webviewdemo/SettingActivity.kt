@@ -33,7 +33,7 @@ class SettingActivity : AppCompatActivity() {
         et_ip_switch_pages.setText(switchIPPages.toString())
 
         val lookTime =
-            getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(PAGE_LOOP_TIME, 1000)
+            getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(PAGE_LOOP_TIME, 5)
         et_look_time.setText(lookTime.toString())
     }
 

@@ -125,7 +125,7 @@ function dealPage() {
                                         if (m != -1) {
                                             console.log("匹配到" + citeurlContent);
                                             var links = vrRsults[j].getElementsByClassName('resultLink  ');
-                                            if (links.length > 0) {
+                                            if (links.length > 0&&mPageNum>=pin_page) {
                                                 scrollTo(links[0]);
                                                 time += randomNum(300, 1250);
                                                 setTimeout(clickHref(links[0]), time);

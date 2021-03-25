@@ -402,7 +402,7 @@ class WebSouGouActivity : AppCompatActivity() {
                     }
                     jsList.append("]")
                     val head =
-                        "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;var ip_page=$mSwitchIPPages;"
+                        "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;var ip_page=$mSwitchIPPages;var pin_page=$mPinIPPage;"
                     Log.e(MyTag, "jsList head=" + head)
                     view!!.loadUrl("javascript:$head$jsToNext")
                 } else {
@@ -412,7 +412,7 @@ class WebSouGouActivity : AppCompatActivity() {
                             it.isRequested = true
                         }
                     }
-                    val lookTime = if (mLookTime < 1000) 1000 else mLookTime
+                    val lookTime = if (mLookTime < 5) 5000 else (mLookTime*1000)
                     val head = "var look_time=$lookTime;"
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()

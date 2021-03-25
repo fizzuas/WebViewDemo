@@ -1,3 +1,4 @@
+console.log("浏览时间"+look_time);
 function toTop(target) {
   return function () {
     target.scrollIntoView({
@@ -46,7 +47,7 @@ console.log("\n step= " + step);
 for(i=0;i<divs.length;i=i+step){
   setTimeout(toTop(divs[i]),time);
   time+=(look_time/10);
-  console.log("i="+i+",time="+time);
+  console.log("浏览 i="+i+",time="+time);
    if((i+step)>(divs.length-1)){
     setTimeout(finish,time);
    }

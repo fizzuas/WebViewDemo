@@ -37,9 +37,7 @@ import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import com.zhy.http.okhttp.OkHttpUtils
 import com.zhy.http.okhttp.callback.FileCallBack
 import kotlinx.android.synthetic.main.activity_c_m_d.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.angmarch.views.NiceSpinner
@@ -51,6 +49,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.util.*
+import kotlin.system.exitProcess
 
 
 const val MyTag: String = "oyx"
@@ -69,7 +68,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
 
     var models = mutableListOf<Model>(
-//        Model("钥匙机", "www.kydz-wx.com")
+//        Model("凯扬大为", "www.kydz-wx.com")
 //        Model("钥匙机", "baike.baidu.com"),
 //        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
 //        Model("手机", "www.oneplus.com")
@@ -217,6 +216,8 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         super.onDestroy()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         unregisterReceiver(receiver)
+        exitProcess(0)
+
     }
 
 
@@ -338,21 +339,24 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
 
     override fun onAddSiteOk(site: String) {
-        models.add(Model(site, if (site.startsWith("site:")) site.substring(5) else site, SITE))
+        val newSite=site.replace(" ","")
+        models.add(Model(newSite, if (newSite.startsWith("site:")) newSite.substring(5) else newSite, SITE))
         modelAdapter.notifyDataSetChanged()
     }
 
     override fun onEditKWOK(position: Int, kw: String, site: String) {
-        Log.e("oyx", "position=$position,\tKW=$kw,\tsite=$site")
-        models[position].keyword = kw
-        models[position].site = site
+        val newSite=site.replace(" ","")
+        Log.e("oyx", "position=$position,\tKW=$kw,\tsite=$newSite")
+        models[position].keyword = kw.replace(" ","")
+        models[position].site = newSite
         modelAdapter.notifyDataSetChanged()
     }
 
     override fun onEditSiteOK(position: Int, site: String) {
-        Log.e("oyx", "position=$position,\tsite$site")
-        models[position].keyword = site
-        models[position].site = if (site.startsWith("site:")) site.substring(5) else site
+        val newSite=site.replace(" ","")
+        Log.e("oyx", "position=$position,\tsite$newSite")
+        models[position].keyword = newSite
+        models[position].site = if (newSite.startsWith("site:")) newSite.substring(5) else newSite
         modelAdapter.notifyDataSetChanged()
     }
 
@@ -362,10 +366,11 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         for (i in 0..kws.lastIndex) {
             sites.forEach {
                 if (kws[i].trim().isNotEmpty() && it.trim().isNotEmpty()) {
-                    Log.i(MyTag, kws[i])
-                    Log.i(MyTag, it)
+                    Log.i(MyTag, kws[i].replace(" ",""))
+                    Log.i(MyTag, it.replace(" ",""))
 
-                    models.add(Model(kws[i], it))
+
+                    models.add(Model(kws[i].replace(" ",""), it.replace(" ","")))
                 }
             }
         }

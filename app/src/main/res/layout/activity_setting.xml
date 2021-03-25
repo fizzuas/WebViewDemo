@@ -12,15 +12,15 @@
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_round_grey_unsel"
+        android:gravity="start|center_vertical"
         android:paddingStart="8dp"
         android:text="设置"
         android:textColor="#200"
         android:textSize="19sp"
         android:textStyle="bold"
-        android:gravity="start|center_vertical"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/bg_round_grey_unsel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -46,6 +46,7 @@
         app:layout_constraintEnd_toEndOf="@id/view"
         app:layout_constraintStart_toStartOf="@id/view"
         app:layout_constraintTop_toTopOf="@id/view" />
+
     <View
         android:id="@+id/view2"
         android:layout_width="0dp"
@@ -53,6 +54,7 @@
         app:layout_constraintEnd_toEndOf="@id/view"
         app:layout_constraintStart_toStartOf="@id/view"
         app:layout_constraintTop_toBottomOf="@id/view1" />
+
     <View
         android:id="@+id/view3"
         android:layout_width="0dp"
@@ -60,6 +62,7 @@
         app:layout_constraintEnd_toEndOf="@id/view"
         app:layout_constraintStart_toStartOf="@id/view"
         app:layout_constraintTop_toBottomOf="@id/view2" />
+
     <View
         android:id="@+id/view4"
         android:layout_width="0dp"
@@ -88,15 +91,15 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="30dp"
-        android:text="0"
+        android:autofillHints=""
+        android:inputType="number"
         android:maxLength="4"
+        android:text="0"
         android:textColor="#200"
         android:textSize="17sp"
-        android:inputType="number"
         app:layout_constraintBottom_toBottomOf="@id/view1"
         app:layout_constraintEnd_toEndOf="@id/view1"
-        app:layout_constraintTop_toTopOf="@id/view1"
-        android:autofillHints="" />
+        app:layout_constraintTop_toTopOf="@id/view1" />
 
     <View
         android:layout_width="0dp"
@@ -126,10 +129,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="30dp"
-        android:text="0"
-        android:maxLength="2"
-        android:textColor="#200"
         android:inputType="number"
+        android:maxLength="2"
+        android:text="0"
+        android:textColor="#200"
         android:textSize="17sp"
         app:layout_constraintBottom_toBottomOf="@id/view2"
         app:layout_constraintEnd_toEndOf="@id/view2"
@@ -143,7 +146,6 @@
         app:layout_constraintBottom_toBottomOf="@id/view2"
         app:layout_constraintEnd_toEndOf="@id/view2"
         app:layout_constraintStart_toStartOf="@id/view2" />
-
 
 
     <!-- 浏览多少页面换IP-->
@@ -165,9 +167,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="30dp"
-        android:text="0"
-        android:maxLength="2"
         android:inputType="number"
+        android:maxLength="2"
+        android:text="0"
         android:textColor="#200"
         android:textSize="17sp"
         app:layout_constraintBottom_toBottomOf="@id/view3"
@@ -189,7 +191,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
-        android:text="页面浏览时间(ms)"
+        android:text="页面浏览时间(s)"
         android:textColor="#200"
         android:textSize="17sp"
         app:layout_constraintBottom_toBottomOf="@id/view4"
@@ -203,14 +205,25 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="30dp"
         android:gravity="center"
-        android:maxLength="6"
         android:inputType="number"
+        android:maxLength="6"
+        android:text="5"
         android:textColor="#200"
         android:textSize="17sp"
         app:layout_constraintBottom_toBottomOf="@id/view4"
         app:layout_constraintEnd_toEndOf="@id/view4"
         app:layout_constraintTop_toTopOf="@id/view4" />
 
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="@id/view"
+        app:layout_constraintStart_toStartOf="@id/view"
+        app:layout_constraintTop_toBottomOf="@id/view"
+        android:layout_marginTop="15dp"
+        android:text="注意：\n1.页面浏览时间 输入小于5S按 5S处理。\n2.搜狗搜索页面切换IP回来后会从第一页重新搜索，到上次切换IP的切换都不会去匹配。\n
+3.输入site:kydz,按“site:kydz”搜索,按kydz匹配"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
