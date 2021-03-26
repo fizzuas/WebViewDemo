@@ -95,6 +95,7 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun setPageIndex(pageIndex: Int) {
+        ToastUtil.show(this,"第$pageIndex 页")
         Log.e(TAG, "page=" + pageIndex)
         val switchIPPages =
             getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)

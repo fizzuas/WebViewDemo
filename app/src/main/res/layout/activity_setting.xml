@@ -222,8 +222,8 @@
         app:layout_constraintStart_toStartOf="@id/view"
         app:layout_constraintTop_toBottomOf="@id/view"
         android:layout_marginTop="15dp"
-        android:text="注意：\n1.页面浏览时间 输入小于5S按 5S处理。\n2.搜狗搜索页面切换IP回来后会从第一页重新搜索，到上次切换IP的切换都不会去匹配。\n
-3.输入site:kydz,按“site:kydz”搜索,按kydz匹配"/>
+        android:text="注意：\n1.页面浏览时间 输入小于5秒按 5秒处理。\n2.搜狗搜索切换IP回来后，从第一页到上次IP切换页面不匹配。\n
+3.添加网址site:kydz,按“site:kydz”搜索,按kydz匹配"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
