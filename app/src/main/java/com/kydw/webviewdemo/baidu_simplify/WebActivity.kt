@@ -18,7 +18,6 @@ import com.kydw.webviewdemo.dialog.JAlertDialog
 import com.kydw.webviewdemo.util.*
 import com.kydw.webviewdemo.util.shellutil.CMD
 import com.kydw.webviewdemo.util.shellutil.ShellUtils
-import com.tencent.bugly.crashreport.CrashReport
 import com.tencent.smtt.export.external.interfaces.SslError
 import com.tencent.smtt.export.external.interfaces.SslErrorHandler
 import com.tencent.smtt.sdk.*

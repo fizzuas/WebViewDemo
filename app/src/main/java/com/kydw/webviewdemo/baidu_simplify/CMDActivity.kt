@@ -7,7 +7,6 @@ import android.graphics.Canvas
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -33,7 +32,6 @@ import com.kydw.webviewdemo.network.UpdateService
 import com.kydw.webviewdemo.network.UploadFileInfo
 import com.kydw.webviewdemo.network.UploadFileResult
 import com.kydw.webviewdemo.util.*
-import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import com.zhy.http.okhttp.OkHttpUtils
 import com.zhy.http.okhttp.callback.FileCallBack
 import kotlinx.android.synthetic.main.activity_c_m_d.*
