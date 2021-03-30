@@ -25,6 +25,7 @@ const val MSG_WEB_VIEW_SET_INDEX = 3
 const val MSG_CHECKING_WEB_UPDATE = 5
 const val MSG_PAGE_INDEX = 6
 const val MSG_PAGE_PIN_INDEX = 7
+const val MSG_LOOK_PAGE_ERROR=8
 
 const val KEY_CACHE_LIST = "KEY_CACHE_LIST"
 

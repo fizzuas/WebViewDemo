@@ -99,6 +99,9 @@ class WebSouGouActivity : AppCompatActivity() {
                 MSG_PAGE_INDEX -> {
                     activity?.setPageIndex(msg.arg1)
                 }
+                MSG_LOOK_PAGE_ERROR->{
+                    activity?.finish()
+                }
                 else -> {
                 }
             }
@@ -183,9 +186,9 @@ class WebSouGouActivity : AppCompatActivity() {
         }
 
         if (mLastCircleIndex == mCircleIndex && mLastKeyWordIndex == mKeyWordIndex && mLastPageIndex == mPageIndex) {
-            ToastUtil.showShort(this, "检擦到页面卡住一分钟")
-            Log.i(MyTag, "检测到 1 分钟还有同一个循环里同个关键词，同一个页面")
-            goonWebView()
+            ToastUtil.showShort(this, "检擦到页面卡住超过两分钟")
+            Log.i(MyTag, "检测到 超过2 分钟还有同一个循环里同个关键词，同一个页面")
+            webViewGoBack()
         } else {
             Log.i(MyTag, "2min  页面有变化")
         }
@@ -294,6 +297,8 @@ class WebSouGouActivity : AppCompatActivity() {
                 if (mKeyWordIndex < mKeyWords.lastIndex) {
                     mKeyWordIndex++
                     webview.loadUrl(baiduIndexUrl)
+
+                    LogUtils.e("nextKeyWord,当前keywordIndex="+mKeyWordIndex)
                 } else {
                     //一个循环结束
                     if (mCircleCount == 0) {
@@ -682,6 +687,16 @@ private class InJavaScriptLocalObj(val context: Context) {
             (context as WebSouGouActivity).handler.sendMessage(msg)
         }
 
+    }
+
+    @JavascriptInterface
+    fun lookPageError(){
+        GlobalScope.launch(Dispatchers.Main) {
+            // 目标网页跳转成功
+            val msg = Message()
+            msg.what= MSG_LOOK_PAGE_ERROR
+            (context as WebSouGouActivity).handler.sendMessage(msg)
+        }
     }
 
 

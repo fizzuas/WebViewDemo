@@ -94,7 +94,6 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        initData()
         setContentView(R.layout.activity_c_m_d)
 
         PermissionUtil.askForRequiredPermissions(this)
@@ -164,12 +163,19 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
     }
 
+    override fun onStart() {
+        super.onStart()
+        initData()
+
+    }
+
     private fun initData() {
         GlobalScope.launch(Dispatchers.Main) {
             val content: String? =
                 ACache.get(this@CMDActivity).getAsString(KEY_CACHE_LIST)
             if (content != null) {
                 val type = object : TypeToken<MutableList<Model>>() {}.type
+                models.clear()
                 models.addAll(Gson().fromJson(content, type))
                 modelAdapter.notifyDataSetChanged()
             }

@@ -44,6 +44,10 @@ if (divs.length > 10) {
   step = parseInt(divs.length / 10);
 }
 console.log("\n step= " + step);
+if(divs.length<3){
+window.java_obj.lookPageError();
+}
+
 for(i=0;i<divs.length;i=i+step){
   setTimeout(toTop(divs[i]),time);
   time+=(look_time/10);
