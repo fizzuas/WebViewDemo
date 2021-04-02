@@ -32,15 +32,21 @@ function scrollTo(target) {
         target.scrollIntoView({
             behavior: "smooth"
         });
-    }
-    ;
+    };
 }
 
 function clickHref(targetA) {
     return function() {
+     console.log("点击进入网址" );
         targetA.click();
-    }
-    ;
+    };
+}
+
+function clickNext(targetA) {
+    return function() {
+    console.log("点击按钮<下一页>");
+        targetA.click();
+    };
 }
 
 function logNext() {
@@ -58,24 +64,20 @@ function checkLoadNext() {
         count = 0;
         if ((parseInt(pn) - 1) > page_max) {
             console.log("前" + page_max + "页分析完毕");
-            window.java_obj.requestFinished();
+            window.java_obj.curKeyWordFinish();
         } else {
             var page_index=parseInt(pn) - 1;
-            window.java_obj.requestPageNUM(page_index);
-            if(page_index>0&&page_index%ip_page==0){
-            setTimeout(dealPage,500);
-            }else{
             dealPage();
-            }
         }
     } else {
         if (count < 40) {
             count++;
             console.log((parseInt(pn) ) + "页加载 未完成，已等待" + ((count + 1) * waitTime) + "ms");
+            console.log(waitTime+"ms后重新点击下一页按钮");
             setTimeout(checkLoadNext, waitTime);
         } else {
             console.log("已用" + ((1 + count) * waitTime) + "ms用于加载下一页，超时");
-            window.java_obj.requestFinished();
+            window.java_obj.requestNextTimeout();
         }
     }
 }
@@ -85,39 +87,47 @@ var mPageNum = 0;
 function dealPage() {
     var nodeNext = document.getElementById("ajax_next_page");
     if (nodeNext == null) {
-        window.java_obj.requestFinished();
+        window.java_obj.notFoundNextNode();
         return;
     }
     mPageNum = parseInt(nodeNext.getAttribute("pagenumpara")) - 1;
-    console.log("正在分析页面=" + mPageNum);
+    console.log("--------------"+mPageNum+"-------------------"+mPageNum+"---------------"+mPageNum+"----------------"+mPageNum+"-------------"+mPageNum+"-------------------");
+    console.log("正在分析页面=" + mPageNum+", 别针处于 页面"+pin_page+"第"+pin_item+"项");
+
+     window.java_obj.setCurPage(mPageNum);
 
     var time = randomNum(300, 1250);
     /*分析mPageNum页，并匹配 */
     var results = document.getElementsByClassName("results");
     if (results == null || results.length == 0) {
-        window.java_obj.requestFinished();
+        window.java_obj.notFoundResultDiv();
         return;
     }
 
     for (var i = 0; i < results.length; i++) {
-        var data_page;
+         var data_page;
+
         if (results[i].getAttribute("data-page") == null) {
             data_page = 1;
         } else {
             data_page = parseInt(results[i].getAttribute("data-page"));
         }
-
         if (data_page == mPageNum) {
-            console.log("\t 找到当前页results[" + i + "]" + (data_page == mPageNum));
             /*找到当前页*/
             var vrRsults = results[i].getElementsByClassName('vrResult');
+             console.log("\t 找到当前页" +data_page+"\t 有"+vrRsults.length+"项");
+
+             var startIndex=0;
+             if(pin_page==data_page){
+                startIndex=pin_item;
+             }
             /*找到 当前页 的所有item的 citeurl*/
-            for (var j = itemStartIndex; j < vrRsults.length; j++) {
+            for (var j = startIndex; j < vrRsults.length; j++) {
                 time += randomNum(300, 1250);
                 setTimeout(scrollTo(vrRsults[j]), time);
                     var citeurls = vrRsults[j].getElementsByClassName('citeurl');
                                 if (citeurls.length > 0) {
-                                    console.log("\t j=" + j + ",citeurl=" + (vrRsults[j].getElementsByClassName('citeurl')[0]).innerText);
+                                    console.log("》》》》》》》》》》第"+mPageNum+"页第" + j + "项");
                                     var citeurlContent = (vrRsults[j].getElementsByClassName('citeurl')[0]).innerText;
 
                                     for (let k in targetSites) {
@@ -129,7 +139,9 @@ function dealPage() {
                                                 scrollTo(links[0]);
                                                 time += randomNum(300, 1250);
                                                 setTimeout(clickHref(links[0]), time);
-                                                window.java_obj.setItemStartIndex(j + 1);
+                                                window.java_obj.setPinIndex(mPageNum,j + 1);
+                                                console.log("记录匹配pin别针点:第"+(mPageNum)+"页，第"+(j+1)+"项");
+
                                                 return;
                                             }
                                         }
@@ -140,18 +152,20 @@ function dealPage() {
         }
     }
 
-    itemStartIndex = 0;
+
+
     /*滑倒底部*/
     time += randomNum(300, 1250);
     setTimeout(scrollTo(nodeNext), time);
 
     /*点击下一页*/
     time += randomNum(500, 1200);
-    setTimeout(clickHref(nodeNext), time);
+    setTimeout(clickNext(nodeNext), time);
 
     /*判断有没有加载新的页面*/
     time += waitTime;
     setTimeout(checkLoadNext, time);
+
 
 }
 dealPage();

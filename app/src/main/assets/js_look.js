@@ -32,28 +32,31 @@ function toBottom(target) {
 }
 
 function finish(){
-    console.log("finish");
+    console.log("浏览结束");
   window.java_obj.finish();
 }
 
 var divs = document.getElementsByTagName("body")[0].getElementsByTagName("div");
-console.log("\n divs.length= " + divs.length);
+console.log("\n 当前页面divs.length= " + divs.length);
 var step = 1;
 var time=look_time/10;
 if (divs.length > 10) {
   step = parseInt(divs.length / 10);
 }
-console.log("\n step= " + step);
+console.log("\n 开始浏览， steps= " + step);
 if(divs.length<3){
 window.java_obj.lookPageError();
-}
+window.java_obj.showSource(document.getElementsByTagName('html')[0].innerHTML,url);
 
+}else{
 for(i=0;i<divs.length;i=i+step){
   setTimeout(toTop(divs[i]),time);
   time+=(look_time/10);
-  console.log("浏览 i="+i+",time="+time);
    if((i+step)>(divs.length-1)){
     setTimeout(finish,time);
    }
 }
+
+}
+
 

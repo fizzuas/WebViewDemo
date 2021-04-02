@@ -94,7 +94,6 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun setPageIndex(pageIndex: Int) {
-        ToastUtil.show(this,"第$pageIndex 页")
         Log.e(TAG, "page=" + pageIndex)
         val switchIPPages =
             getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
@@ -366,7 +365,7 @@ class WebActivity : AppCompatActivity() {
                     Log.e(TAG, "百度首页=" + url)
                     //首页，提交表单
                     val jsForm =
-                        application.assets.open("js_bd_2second.js").bufferedReader().use {
+                        application.assets.open("baidu_bsr/js_bd_2second.js").bufferedReader().use {
                             it.readText()
                         }
                     Log.i(MyTag, "keyword$keyWord")
@@ -407,7 +406,7 @@ class WebActivity : AppCompatActivity() {
                         Log.e(MyTag, "发现下一页加载=" + url)
                         //Next 页
                         val jsToNext =
-                            application.assets.open("js_to_next.js").bufferedReader().use {
+                            application.assets.open("baidu_bsr/js_to_next.js").bufferedReader().use {
                                 it.readText()
                             }
 

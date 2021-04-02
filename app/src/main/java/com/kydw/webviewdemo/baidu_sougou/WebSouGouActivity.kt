@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import com.kydw.webviewdemo.*
@@ -31,36 +32,48 @@ import java.lang.StringBuilder
 import java.lang.ref.WeakReference
 import java.util.*
 
-const val UC_CHECK_TIME_INTERVAL = 3 * 60 * 1000L
+const val UC_CHECK_TIME_INTERVAL = 6* 60 * 1000L
+const val ERR_ARG1 = "error_info"
+const val ERR_ARG2 = "error_url"
+
+enum class PageState {
+    Index,
+    SOU,
+    LOOK,
+}
 
 class WebSouGouActivity : AppCompatActivity() {
-    private var mPinIPPage = 0
     private var mLookTime: Int = 0
     private var mSwitchIPPages: Int = 0
     private var mSingleLoopMaxPages: Int = 0
     private var mCircleCount = 1
     var mCircleIndex = 1
 
+    var mCurPageState: PageState = PageState.Index
 
-    var isDealingWebError = false
     var stoped = false
 
-    // <div class="results" data-page="2"> vrResult 节点的起始偏移index
-    var mPageItemIndex = 0
+    // <div class="results" data-page="2"> 中 vrResult 节点的起始偏移index
+    private var mPinItemIndex = 0
+    private var mPinPageIndex = 0
 
-    val isRoot = true
+
+    private var mPinIPPageIndex = 0
+
+    private var mCurPageIndex = 1
+
+    private val isRoot = true
     private var mLoadingSwitchFlyDialog: JAlertDialog? = null
     private var mLoadingCheckNetDialog: JAlertDialog? = null
     private var mShowSetInfoDialog: JAlertDialog? = null
 
     private val obj = InJavaScriptLocalObj(this)
-    val baiduIndexUrl = "https://wap.sogou.com/"
+    val baiDuIndexUrl = "https://wap.sogou.com/"
 
     val mKeyWords =
         mutableListOf<Pair<String, MutableList<TUrl>>>()
     var mKeyWordIndex = 0
 
-    var mPageIndex = 0
 
     var mLastCircleIndex = 0
     var mLastKeyWordIndex = 0
@@ -78,29 +91,41 @@ class WebSouGouActivity : AppCompatActivity() {
             }
             val activity = mActivity.get()
             when (msg.what) {
-                MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT -> {
-                    //页面异常，没有"下一页"Node"
-                    activity?.nextKeyWord()
-                }
                 MSG_TARGET_JUMP_SUC -> {
                     //一个keyword  的单个请求访问成功
                     activity?.onTargetJumpSuc()
                 }
                 MSG_WEB_VIEW_RECEIVE_ERROR -> {
-                    ToastUtil.showShort(activity, "检测到网络异常，在处理...")
-                    activity?.dealWebException()
+                    val errInfo = msg.data.getString(ERR_ARG1)!!
+                    val errUrl = msg.data.getString(ERR_ARG2)!!
+                    activity?.dealWebException(errInfo, errUrl)
                 }
                 MSG_CHECKING_WEB_UPDATE -> {
                     activity?.checkWebUpdate()
                 }
                 MSG_WEB_VIEW_SET_INDEX -> {
-                    activity?.setItemStartIndex(msg.arg1)
+                    activity?.pinItemIndex(msg.arg1, msg.arg2)
                 }
                 MSG_PAGE_INDEX -> {
-                    activity?.setPageIndex(msg.arg1)
+                    activity?.setCurPage(msg.arg1)
                 }
-                MSG_LOOK_PAGE_ERROR->{
-                    activity?.finish()
+                MSG_LOOK_PAGE_DIVS_SMALL -> {
+                    activity?.lookPageDivsSmall()
+                }
+                CUR_KEYWORD_FINISH -> {
+                    activity?.nextKeyWord()
+                }
+                NOT_FOUND_NEXT_NODE -> {
+                    activity?.notFoundNextNode()
+                }
+                NOT_FOUND_RESULT_DIV -> {
+                    activity?.notFoundResultDIV()
+                }
+                REQUEST_NEXT_TIME_OUT -> {
+                    activity?.requestNextTimeout()
+                }
+                NOT_FOUND_CONTENT -> {
+                    activity?.notFoundContent(msg.arg1)
                 }
                 else -> {
                 }
@@ -108,27 +133,124 @@ class WebSouGouActivity : AppCompatActivity() {
         }
     }
 
-    private fun setItemStartIndex(index: Int) {
-        Log.i(MyTag, "setItemIndex" + index)
-        mPageItemIndex = index
+    private fun notFoundContent(pageNum: Int) {
+        val tip = AlertDialog.Builder(this).setTitle("注意")
+            .setMessage("""点击下一页后，未找到${pageNum}页内容""").create()
+        tip.show()
+        GlobalScope.launch(Dispatchers.IO) {
+            delay(6000)
+            withContext(Dispatchers.Main) {
+                tip.dismiss()
+            }
+            delay(100)
+            withContext(Dispatchers.Main) {
+                nextKeyWord()
+            }
+        }
+    }
+
+    private fun requestNextTimeout() {
+        val tip = AlertDialog.Builder(this).setTitle("注意")
+            .setMessage("""第${mCurPageIndex}请求下一页超时""").create()
+        tip.show()
+        GlobalScope.launch(Dispatchers.IO) {
+            delay(6000)
+            withContext(Dispatchers.Main) {
+                tip.dismiss()
+            }
+            delay(100)
+            withContext(Dispatchers.Main) {
+                nextKeyWord()
+            }
+        }
+    }
+
+
+    private fun notFoundNextNode() {
+        val tip = AlertDialog.Builder(this).setTitle("注意")
+            .setMessage("第" + mCurPageIndex + "页没有找到<下一页>按钮\n" + "将搜索:" + getTipInfo()).create()
+        tip.show()
+        GlobalScope.launch(Dispatchers.IO) {
+            delay(6000)
+            withContext(Dispatchers.Main) {
+                tip.dismiss()
+            }
+            delay(100)
+            withContext(Dispatchers.Main) {
+                nextKeyWord()
+            }
+        }
+    }
+
+    private fun notFoundResultDIV() {
+        val tip = AlertDialog.Builder(this).setTitle("注意")
+            .setMessage("第" + mCurPageIndex + "页没有找到搜索结果\n" + "将搜索:" + getTipInfo()).create()
+        tip.show()
+        GlobalScope.launch(Dispatchers.IO) {
+            delay(10000)
+            withContext(Dispatchers.Main) {
+                tip.dismiss()
+            }
+            delay(100)
+            withContext(Dispatchers.Main) {
+                nextKeyWord()
+            }
+        }
+    }
+
+    private fun lookPageDivsSmall() {
+        val tip = AlertDialog.Builder(this).setTitle("注意")
+            .setMessage("目标页面显示似乎异常(DIVS<3)\n").create()
+        tip.show()
+        GlobalScope.launch(Dispatchers.IO) {
+            delay(10000)
+            withContext(Dispatchers.Main) {
+                tip.dismiss()
+            }
+            delay(100)
+            withContext(Dispatchers.Main) {
+                webview.goBack()
+            }
+        }
+    }
+
+
+    private fun pinItemIndex(pinPage: Int, pinItem: Int) {
+        mPinPageIndex = pinPage
+        mPinItemIndex = pinItem
+        updateUI()
     }
 
     private fun onTargetJumpSuc() {
         nextRequest()
     }
 
+
+    private fun setCurPage(pageIndex: Int) {
+        mCurPageIndex = pageIndex
+        updateUI()
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun updateUI() {
+        tv_cur_page.text = "第$mCurPageIndex 页"
+        tv_rec_look.text = """最近浏览:${mPinPageIndex}页${(mPinItemIndex)}项"""
+        tv_loop.text = """第${mCircleIndex}次循环"""
+        tv_kw.text = "关键词:" + mKeyWords[mKeyWordIndex].first
+    }
+
     private fun setPageIndex(pageIndex: Int) {
-        Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "page=" + pageIndex)
-        mPageIndex = pageIndex
+        Log.e(com.kydw.webviewdemo.baidu_simplify.TAG, "page=$pageIndex")
+        mCurPageIndex = pageIndex
 
         val switchIPPages =
             getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
         val pageMax =
             getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SINGLE_LOOP_PAGE_MAX, 0)
         Log.e(com.kydw.webviewdemo.baidu_simplify.TAG,
-            "mPinIPPage=" + mPinIPPage + ",switchIPPages=" + switchIPPages + "是否需要切换IP=" + (switchIPPages > 0 && (pageIndex > mPinIPPage) && (switchIPPages > 0) && (pageIndex % switchIPPages == 0) && (pageIndex != pageMax)))
-        if (switchIPPages > 0 && (pageIndex > mPinIPPage) && (switchIPPages > 0) && (pageIndex % switchIPPages == 0) && (pageIndex != pageMax)) {
-            mPinIPPage = pageIndex
+            "mPinIPPage=" + mPinIPPageIndex + ",switchIPPages=" + switchIPPages + "是否需要切换IP=" + (switchIPPages > 0 && (pageIndex > mPinIPPageIndex) && (switchIPPages > 0) && (pageIndex % switchIPPages == 0) && (pageIndex != pageMax)))
+        if (switchIPPages > 0 && (pageIndex > mPinIPPageIndex) && (switchIPPages > 0) && (pageIndex % switchIPPages == 0) && (pageIndex != pageMax)) {
+            mPinIPPageIndex = pageIndex
             stopWebView()
             // 切换IP
             if (mLoadingSwitchFlyDialog == null) {
@@ -164,10 +286,7 @@ class WebSouGouActivity : AppCompatActivity() {
                     goonWebView()
                 }
             }
-
         }
-
-
     }
 
     private fun goonWebView() {
@@ -185,56 +304,61 @@ class WebSouGouActivity : AppCompatActivity() {
             return
         }
 
-        if (mLastCircleIndex == mCircleIndex && mLastKeyWordIndex == mKeyWordIndex && mLastPageIndex == mPageIndex) {
-            ToastUtil.showShort(this, "检擦到页面卡住超过两分钟")
-            Log.i(MyTag, "检测到 超过2 分钟还有同一个循环里同个关键词，同一个页面")
-            webViewGoBack()
+        val min = UC_CHECK_TIME_INTERVAL / (60000)
+        if (mLastCircleIndex == mCircleIndex && mLastKeyWordIndex == mKeyWordIndex && mLastPageIndex == mCurPageIndex) {
+            Log.i(MyTag, "检测到 超过 $min 分钟还有同一个循环里同个关键词，同一个页面")
+
+            val tip =
+                AlertDialog.Builder(this).setTitle("提示").setMessage("检查到界面有卡住超过 $min 分钟\n将回退到上一个界面")
+                    .create()
+            tip.show()
+            GlobalScope.launch(Dispatchers.IO) {
+                delay(6000)
+                withContext(Dispatchers.Main) {
+                    tip.dismiss()
+                    webViewGoBack()
+                }
+            }
         } else {
-            Log.i(MyTag, "2min  页面有变化")
+            Log.i(MyTag, "$min 分钟 、页面有变化")
         }
 
         mLastCircleIndex = mCircleIndex
         mLastKeyWordIndex = mKeyWordIndex
-        mLastPageIndex = mPageIndex
+        mLastPageIndex = mCurPageIndex
+
+        Log.i(MyTag,
+            "$min 分钟 检测mLastCircleIndex=" + mLastCircleIndex + ",mLastKeyWordIndex=" + mLastKeyWordIndex
+                    + ",mLastPageIndex=" + mLastPageIndex)
 
 
     }
 
-    private fun dealWebException() {
-        if (!isDealingWebError) {
-            isDealingWebError = true
-            var count = 0
-            GlobalScope.launch(Dispatchers.Main) {
-                if (mLoadingCheckNetDialog == null) {
-                    mLoadingCheckNetDialog =
-                        JAlertDialog.Builder(this@WebSouGouActivity)
-                            .setContentView(R.layout.dialog_waiting_net)
-                            .setText(R.id.content, if (count > 100) "请检查4G卡是否有流量" else "网络已断开...")
-                            .setWidth_Height_dp(300, 120).setCancelable(false)
-                            .create()
-                }
-                mLoadingCheckNetDialog?.show()
-                do {
-                    count++
-                    ShellUtils.execCommand(CMD.CMD_1, true)
-                    ShellUtils.execCommand(CMD.CMD_2, true)
-                    delay(2000)
-                    if (NetState.hasNetWorkConnection(this@WebSouGouActivity) && isOnline()) {
-                        webViewGoBack()
-                        isDealingWebError = false
-                        mLoadingCheckNetDialog?.dismiss()
-                        return@launch
-                    }
-                } while (true)
+    private fun dealWebException(errInfo: String, errUrl: String) {
+        LogUtils.d(MyTag, "dealWebException网络不可用\n$errInfo\n$errUrl")
+        if (Looper.myLooper() == mainLooper) {
+            if (errInfo == "net::ERR_NAME_NOT_RESOLVED") {
+                AlertDialog.Builder(this).setTitle("提示").setMessage("网络不可用\n$errInfo\n$errUrl")
+                    .setCancelable(true)
+                    .show()
+            } else {
+                ToastUtil.show(this, "网络不可用\n$errInfo\n$errUrl, 正在重载")
+                LogUtils.d(MyTag, "dealWebException webview reload")
+                webview.reload()
             }
+
         }
     }
 
     private fun webViewGoBack() {
         if (webview.canGoBack()) {
-            webview.goBack()
+            if (mCurPageState == PageState.LOOK || mCurPageState == PageState.SOU) {
+                webview.goBack()
+            } else {
+                webview.reload()
+            }
         } else {
-            webview.loadUrl(baiduIndexUrl)
+            webview.loadUrl(baiDuIndexUrl)
         }
     }
 
@@ -250,7 +374,6 @@ class WebSouGouActivity : AppCompatActivity() {
     }
 
     private fun nextKeyWord() {
-        mPinIPPage = 0
         //切换IP
         if (mLoadingSwitchFlyDialog == null) {
             mLoadingSwitchFlyDialog =
@@ -280,7 +403,7 @@ class WebSouGouActivity : AppCompatActivity() {
                 if (NetState.hasNetWorkConnection(this@WebSouGouActivity) && isOnline()) {
                     val result1 = ShellUtils.execCommand(CMD.IP + " rmnet_data0", isRoot)
                     if (result1?.successMsg != null) {
-                        Log.i(MyTag, "result1.sucMsg=" + result1.successMsg?.toString())
+                        Log.i(MyTag, "切换IP CMD RESULT=" + result1.successMsg?.toString())
                         appendFile(result1.successMsg + "\n\n",
                             getExternalFilesDir(null)!!.absolutePath + File.separator + "ip.txt",
                             this@WebSouGouActivity)
@@ -296,9 +419,13 @@ class WebSouGouActivity : AppCompatActivity() {
                 mLoadingSwitchFlyDialog?.dismiss()
                 if (mKeyWordIndex < mKeyWords.lastIndex) {
                     mKeyWordIndex++
-                    webview.loadUrl(baiduIndexUrl)
 
-                    LogUtils.e("nextKeyWord,当前keywordIndex="+mKeyWordIndex)
+                    webview.loadUrl(baiDuIndexUrl)
+
+                    LogUtils.e("--------------------------------------------------------------------------------------------------")
+                    LogUtils.e("当前keywordIndex=" + mKeyWordIndex + "\tkeyword=" + mKeyWords[mKeyWordIndex].toString())
+                    LogUtils.e("--------------------------------------------------------------------------------------------------")
+
                 } else {
                     //一个循环结束
                     if (mCircleCount == 0) {
@@ -315,12 +442,33 @@ class WebSouGouActivity : AppCompatActivity() {
                                 "开启第" + (mCircleIndex + 1) + "次循环")
                             nextCircle()
                         }
-                        mCircleIndex++
                     }
+                    mCircleIndex++
                 }
+
+
+                mCurPageIndex = 0
+                mPinPageIndex = 0
+                mPinItemIndex = 0
+                updateUI()
+
             }
         }
     }
+
+    private fun getTipInfo(): String {
+        return if (mKeyWordIndex < this.mKeyWords.lastIndex) {
+            "关键词" + mKeyWords[mKeyWordIndex + 1].first
+        } else {
+            if (mCircleCount == 0) {
+                "下一个循环\n关键词:" + mKeyWords[0].first
+            } else {
+                "第${mCircleIndex + 1}循环\n关键词:" + mKeyWords[0].first
+            }
+        }
+
+    }
+
 
     private fun nextCircle() {
         mLoadingSwitchFlyDialog?.dismiss()
@@ -331,7 +479,7 @@ class WebSouGouActivity : AppCompatActivity() {
             }
         }
         clearCache()
-        webview.loadUrl(baiduIndexUrl)
+        webview.loadUrl(baiDuIndexUrl)
     }
 
     private fun saveIP(sucMsg0: String) {
@@ -360,8 +508,15 @@ class WebSouGouActivity : AppCompatActivity() {
 
             override fun onReceivedError(p0: WebView?, p1: Int, p2: String?, p3: String?) {
                 super.onReceivedError(p0, p1, p2, p3)
-                handler.sendEmptyMessage(MSG_WEB_VIEW_RECEIVE_ERROR)
                 Log.e(MyTag, TAG_CHECK + "onReceivedError")
+                Log.e(MyTag, TAG_CHECK + "p1=" + p1 + ",p2=" + p2 + ",p3=" + p3)
+
+                val msg = Message()
+                msg.what = MSG_WEB_VIEW_RECEIVE_ERROR
+                msg.data.putString(ERR_ARG1, p2)
+                msg.data.putString(ERR_ARG2, p3)
+                handler.sendMessage(msg)
+
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -381,18 +536,20 @@ class WebSouGouActivity : AppCompatActivity() {
                 val keyWord = mKeyWords[mKeyWordIndex].first
                 val siteInfo = mKeyWords[mKeyWordIndex].second
 
-                if (url == baiduIndexUrl) {
+                if (url == baiDuIndexUrl) {
+                    mCurPageState = PageState.Index
+                    mCurPageIndex = 0
                     Log.e(MyTag, "搜狗首页=" + url)
                     //首页，提交表单
                     val jsForm =
                         application.assets.open("sougou/js_index.js").bufferedReader().use {
                             it.readText()
                         }
-                    Log.i(MyTag, "keyword$keyWord")
-                    Log.i(MyTag, "siteInfo$siteInfo")
                     val head = "var keyword=\"$keyWord\";"
+                    LogUtils.i("搜狗首页注入js头$head");
                     view!!.loadUrl("javascript:$head$jsForm")
                 } else if (url!!.startsWith("https://wap.sogou.com/web/searchList.jsp")) {
+                    mCurPageState = PageState.SOU
                     Log.e(MyTag, "搜狗搜索后首页加载=$url")
                     //Next 页
                     val jsToNext =
@@ -407,23 +564,28 @@ class WebSouGouActivity : AppCompatActivity() {
                     }
                     jsList.append("]")
                     val head =
-                        "var targetSites=$jsList;var itemStartIndex=$mPageItemIndex;var page_max=$mSingleLoopMaxPages;var ip_page=$mSwitchIPPages;var pin_page=$mPinIPPage;"
-                    Log.e(MyTag, "jsList head=" + head)
+                        "var targetSites=$jsList;var page_max=$mSingleLoopMaxPages;var ip_page=$mSwitchIPPages;var pin_page=$mPinPageIndex;var pin_item=$mPinItemIndex;"
+                    Log.i(MyTag, "搜狗搜索页注入js头\t $head")
                     view!!.loadUrl("javascript:$head$jsToNext")
                 } else {
-                    Log.e(MyTag, "目标页加载成功=$url")
+                    mCurPageState = PageState.LOOK
+                    Log.e(MyTag, "目标页加载成功=\"$url\"")
                     siteInfo.forEach {
                         if (url.contains(it.url)) {
                             it.isRequested = true
                         }
                     }
-                    val lookTime = if (mLookTime < 5) 5000 else (mLookTime*1000)
-                    val head = "var look_time=$lookTime;"
+                    val lookTime = if (mLookTime < 5) 5000 else (mLookTime * 1000)
+                    val head = "var look_time=$lookTime;var url=\"$url\";"
                     val jsLook = application.assets.open("js_look.js").bufferedReader().use {
                         it.readText()
                     }
+                    Log.i(MyTag, "目标页注入js头\t $head")
                     view!!.loadUrl("javascript:$head$jsLook")
+
                 }
+
+
             }
 
             override fun onReceivedSslError(
@@ -439,7 +601,12 @@ class WebSouGouActivity : AppCompatActivity() {
 
         webview.addJavascriptInterface(obj, "java_obj")
         setWebView(webview)
-        webview.loadUrl(baiduIndexUrl)
+        webview.loadUrl(baiDuIndexUrl)
+
+        LogUtils.e("--------------------------------------------------------------------------------------------------")
+        LogUtils.e("当前keywordIndex=" + mKeyWordIndex + "\tkeyword=" + mKeyWords[mKeyWordIndex].toString())
+        LogUtils.e("--------------------------------------------------------------------------------------------------")
+
         webview.keepScreenOn = true
 
         but_stop.setOnClickListener {
@@ -461,6 +628,7 @@ class WebSouGouActivity : AppCompatActivity() {
         handler.postDelayed(runnable, UC_CHECK_TIME_INTERVAL)
     }
 
+
     private fun reStartWebView() {
         stoped = false
         webview.reload()
@@ -472,7 +640,7 @@ class WebSouGouActivity : AppCompatActivity() {
 
         val list = intent.getParcelableArrayExtra(KEYWORD_SITES)
         list!!.forEach {
-            Log.i(MyTag, "initData\t" + it.toString())
+            Log.d(MyTag, "initData\t  from intent" + it.toString())
         }
         val maps = list.groupBy { (it as Model).keyword }
         for (item in maps.toList()) {
@@ -480,19 +648,9 @@ class WebSouGouActivity : AppCompatActivity() {
                 item.second.map { TUrl((it as Model).site!!, false) }.toMutableList()))
         }
         mKeyWords.forEach {
-            Log.e(MyTag, "initData after \t" + it.toString())
+            Log.i(MyTag, "initData  mKeyWords \t" + it.toString())
         }
 
-        val siteInfo = mKeyWords[mKeyWordIndex].second
-        val jsList = StringBuilder()
-        jsList.append("[")
-        for (i in siteInfo.indices) {
-            if (!siteInfo[i].isRequested) {
-                jsList.append("\"${siteInfo[i].url}\",")
-            }
-        }
-        jsList.append("]")
-        Log.e(MyTag, "jsList=" + jsList)
     }
 
     private fun
@@ -604,9 +762,9 @@ class WebSouGouActivity : AppCompatActivity() {
 private class InJavaScriptLocalObj(val context: Context) {
     @JavascriptInterface
     fun showSource(html: String, url: String) {
-        Log.i(MyTag, "showSource")
+        Log.i(MyTag, "打印html到本地" + context.getExternalFilesDir(null)!!.absolutePath + "htmls.txt")
         appendFile(
-            "\n" + "url=" + url + "\n" + html.subSequence(0, 50) + "\n",
+            "\n" + "url=" + url + "\n" + html + "\n",
             context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls.txt",
             context
         )
@@ -633,68 +791,90 @@ private class InJavaScriptLocalObj(val context: Context) {
     }
 
     @JavascriptInterface
-    fun requestFinished() {
-        Log.i(MyTag, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
+    fun curKeyWordFinish() {
         GlobalScope.launch(Dispatchers.Main) {
-            // 页面没有"下一页"，页面异常
             (context as WebSouGouActivity).handler.sendEmptyMessage(
-                MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT)
+                CUR_KEYWORD_FINISH)
         }
     }
 
     @JavascriptInterface
     fun finish() {
-        Log.i(MyTag, "finish")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
             (context as WebSouGouActivity).handler.sendEmptyMessage(MSG_TARGET_JUMP_SUC)
         }
     }
 
-    @JavascriptInterface
-    fun swipe() {
-        Log.i(MyTag, "swipe")
-        val x0 = 240
-        val y0 = 1230
-        val x1 = 870
-        val y1 = 1230
-        Log.i(MyTag, "$x0,$y0;$x1,$y1")
-        GlobalScope.launch {
-            val result = ShellUtils.execSwipe(x0, y0, x1, y1, 500)
-            Log.i(MyTag, result.toString())
-        }
-    }
 
     @JavascriptInterface
-    fun setItemStartIndex(itemStartIndex: Int) {
-        Log.i(MyTag, "itemStartIndex=$itemStartIndex")
+    fun setCurPage(pageNum: Int) {
         GlobalScope.launch(Dispatchers.Main) {
-            // 目标网页跳转成功
-            val msg = Message()
-            msg.what = MSG_WEB_VIEW_SET_INDEX
-            msg.arg1 = itemStartIndex
-            (context as WebSouGouActivity).handler.sendMessage(msg)
-        }
-    }
-
-    @JavascriptInterface
-    fun requestPageNUM(pageNum: Int) {
-        GlobalScope.launch(Dispatchers.Main) {
-            // 目标网页跳转成功
             val msg = Message()
             msg.what = MSG_PAGE_INDEX
             msg.arg1 = pageNum
             (context as WebSouGouActivity).handler.sendMessage(msg)
         }
 
+
     }
 
+
     @JavascriptInterface
-    fun lookPageError(){
+    fun setPinIndex(pinPage: Int, pinItemIndex: Int) {
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
             val msg = Message()
-            msg.what= MSG_LOOK_PAGE_ERROR
+            msg.what = MSG_WEB_VIEW_SET_INDEX
+            msg.arg1 = pinPage
+            msg.arg2 = pinItemIndex
+            (context as WebSouGouActivity).handler.sendMessage(msg)
+        }
+    }
+
+
+    @JavascriptInterface
+    fun lookPageError() {
+        GlobalScope.launch(Dispatchers.Main) {
+            // 目标网页跳转成功
+            val msg = Message()
+            msg.what = MSG_LOOK_PAGE_DIVS_SMALL
+            (context as WebSouGouActivity).handler.sendMessage(msg)
+        }
+    }
+
+
+    @JavascriptInterface
+    fun notFoundNextNode() {
+        GlobalScope.launch(Dispatchers.Main) {
+            (context as WebSouGouActivity).handler.sendEmptyMessage(
+                NOT_FOUND_NEXT_NODE)
+        }
+    }
+
+
+    @JavascriptInterface
+    fun notFoundResultDiv() {
+        GlobalScope.launch(Dispatchers.Main) {
+            (context as WebSouGouActivity).handler.sendEmptyMessage(
+                NOT_FOUND_RESULT_DIV)
+        }
+    }
+
+    @JavascriptInterface
+    fun requestNextTimeout() {
+        GlobalScope.launch(Dispatchers.Main) {
+            (context as WebSouGouActivity).handler.sendEmptyMessage(
+                REQUEST_NEXT_TIME_OUT)
+        }
+    }
+
+    @JavascriptInterface
+    fun notFoundContent(pageNum: Int) {
+        GlobalScope.launch(Dispatchers.Main) {
+            val msg = Message()
+            msg.what = NOT_FOUND_CONTENT
+            msg.arg1 = pageNum
             (context as WebSouGouActivity).handler.sendMessage(msg)
         }
     }

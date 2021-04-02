@@ -6,5 +6,6 @@ data class UploadFileResultValue(
         val Size: Int?,
         val Suffix:String?,
         val UpdateRemark: String?,
-        val Versions: Double?
+        val Versions: Double?,
+        val FileAddressV2:String?
 )

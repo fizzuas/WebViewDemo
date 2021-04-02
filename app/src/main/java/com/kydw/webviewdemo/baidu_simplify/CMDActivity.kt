@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -32,6 +33,7 @@ import com.kydw.webviewdemo.network.UpdateService
 import com.kydw.webviewdemo.network.UploadFileInfo
 import com.kydw.webviewdemo.network.UploadFileResult
 import com.kydw.webviewdemo.util.*
+import com.kydw.webviewdemo.util.shellutil.ShellUtils
 import com.zhy.http.okhttp.OkHttpUtils
 import com.zhy.http.okhttp.callback.FileCallBack
 import kotlinx.android.synthetic.main.activity_c_m_d.*
@@ -66,11 +68,12 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
 
     var models = mutableListOf<Model>(
-//        Model("凯扬大为", "www.kydz-wx.com")
-//        Model("钥匙机", "baike.baidu.com"),
-//        Model("www.kydz-wx.com", "www.kydz-wx.com", SITE),
-//        Model("手机", "www.oneplus.com")
-
+        Model("site:pewdo.com", "pewdo.com"),
+        Model("site:68681313.cn", "68681313.cn")
+//
+//
+//        Model("site:oillara.com", "oillara.com"),
+//        Model("site:lcbc.net baidukey.com", "lcbc.net baidukey.com")
     )
 
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
@@ -130,13 +133,14 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
         val niceSpinner: NiceSpinner = findViewById<View>(R.id.nice_spinner) as NiceSpinner
         val dataset: List<String> = LinkedList(
-            Arrays.asList(BrowserType.BaiDu.i,
-            BrowserType.SouGou.i
+            Arrays.asList(
+                BrowserType.BaiDu.i,
+                BrowserType.SouGou.i
 //            BrowserType.SouGou_WX.i
 
 //            BrowserType.TouTiao.i,
 //            BrowserType.B360.i),
-        ))
+            ))
         niceSpinner.attachDataSource(dataset)
         niceSpinner.setOnSpinnerItemSelectedListener(object : OnSpinnerItemSelectedListener {
             override fun onItemSelected(
@@ -152,7 +156,12 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         })
 
 
-        but_sou.setOnClickListener { startSearch(mSearchType) }
+        but_sou.setOnClickListener {
+
+            startSearch(mSearchType)
+//            checkUpdate()
+        }
+
     }
 
     override fun onStop() {
@@ -161,22 +170,15 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
     }
 
-    override fun onStart() {
-        super.onStart()
-        initData()
-
-    }
 
     private fun initData() {
-        GlobalScope.launch(Dispatchers.Main) {
-            val content: String? =
-                ACache.get(this@CMDActivity).getAsString(KEY_CACHE_LIST)
-            if (content != null) {
-                val type = object : TypeToken<MutableList<Model>>() {}.type
-                models.clear()
-                models.addAll(Gson().fromJson(content, type))
-                modelAdapter.notifyDataSetChanged()
-            }
+        val content: String? =
+            ACache.get(this@CMDActivity).getAsString(KEY_CACHE_LIST)
+        if (content != null) {
+            val type = object : TypeToken<MutableList<Model>>() {}.type
+            models.clear()
+            models.addAll(Gson().fromJson(content, type))
+            modelAdapter.notifyDataSetChanged()
         }
     }
 
@@ -214,6 +216,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         super.onResume()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         checkUpdate()
+        initData()
     }
 
     override fun onDestroy() {
@@ -254,7 +257,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
             ) {
                 val fileResult = response.body()
                 if (fileResult?.Value != null) {
-                    if (!fileResult.Value.FileAddress.isNullOrEmpty()) {
+                    if (!fileResult.Value.FileAddressV2.isNullOrEmpty() || !fileResult.Value.FileAddress.isNullOrEmpty()) {
                         // 下载apk后安装
                         LogUtils.i(fileResult.toString())
                         showUpdateApkInfo(fileResult)
@@ -280,7 +283,17 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
             .setMessage(updateMsg)
             .setPositiveButton(getString(R.string.update)) { dialog, _ ->
                 dialog.dismiss()
-                loadNewVersion(fileResult.Value?.FileAddress)
+                if (!fileResult.Value?.FileAddressV2.isNullOrEmpty()) {
+                    loadNewVersion(fileResult.Value?.FileAddressV2)
+                } else {
+                    if (!fileResult.Value?.FileAddress.isNullOrEmpty()) {
+                        val fileAddress = fileResult.Value?.FileAddress
+                        val url = "$HOST_DOWN$fileAddress".replace("~", "")
+                        loadNewVersion(url)
+                    }
+                }
+
+
             }
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                 dialog.dismiss()
@@ -288,10 +301,10 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
             .show()
     }
 
-    private fun loadNewVersion(fileAddress: String?) {
-        if (!fileAddress.isNullOrEmpty()) {
-            val url = "$HOST_DOWN$fileAddress".replace("~", "")
-            Log.e("下载", url)
+    private fun loadNewVersion(url: String?) {
+        if (!url.isNullOrEmpty()) {
+//            val url = "$HOST_DOWN$fileAddress".replace("~", "")
+            Log.e("oyx", url)
             mDialog.setTitle(getString(R.string.upgradeing_soft_package))
             mDialog.max = 100
             mDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
@@ -343,21 +356,23 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
 
     override fun onAddSiteOk(site: String) {
-        val newSite=site.replace(" ","")
-        models.add(Model(newSite, if (newSite.startsWith("site:")) newSite.substring(5) else newSite, SITE))
+        val newSite = site.replace(" ", "")
+        models.add(Model(newSite,
+            if (newSite.startsWith("site:")) newSite.substring(5) else newSite,
+            SITE))
         modelAdapter.notifyDataSetChanged()
     }
 
     override fun onEditKWOK(position: Int, kw: String, site: String) {
-        val newSite=site.replace(" ","")
+        val newSite = site.replace(" ", "")
         Log.e("oyx", "position=$position,\tKW=$kw,\tsite=$newSite")
-        models[position].keyword = kw.replace(" ","")
+        models[position].keyword = kw.replace(" ", "")
         models[position].site = newSite
         modelAdapter.notifyDataSetChanged()
     }
 
     override fun onEditSiteOK(position: Int, site: String) {
-        val newSite=site.replace(" ","")
+        val newSite = site.replace(" ", "")
         Log.e("oyx", "position=$position,\tsite$newSite")
         models[position].keyword = newSite
         models[position].site = if (newSite.startsWith("site:")) newSite.substring(5) else newSite
@@ -370,11 +385,11 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
         for (i in 0..kws.lastIndex) {
             sites.forEach {
                 if (kws[i].trim().isNotEmpty() && it.trim().isNotEmpty()) {
-                    Log.i(MyTag, kws[i].replace(" ",""))
-                    Log.i(MyTag, it.replace(" ",""))
+                    Log.i(MyTag, kws[i].replace(" ", ""))
+                    Log.i(MyTag, it.replace(" ", ""))
 
 
-                    models.add(Model(kws[i].replace(" ",""), it.replace(" ","")))
+                    models.add(Model(kws[i].replace(" ", ""), it.replace(" ", "")))
                 }
             }
         }
