@@ -43,9 +43,13 @@ class WebActivity : AppCompatActivity() {
     private var mLoadingSwitchFlyDialog: JAlertDialog? = null
     private var mLoadingCheckNetDialog: JAlertDialog? = null
 
-    private var mPinIndex = 0
-    private var mPinPage = 0
+    private var mPinPageIndex = 0
+    private var mPinItemIndex = 0
+
+
     private var mPinIPPage = 0
+
+    private var mCurPageIndex=0
 
     private val obj = InJavaScriptLocalObj(this)
     val baiduIndexUrl = "https://www.baidu.com/"
@@ -146,8 +150,8 @@ class WebActivity : AppCompatActivity() {
 
     private fun setLastIndex(pinPage: Int, pinIndex: Int) {
         Log.i(TAG, "setIndex: pinPage" + pinPage + ",pinIndex" + pinIndex)
-        mPinPage = pinPage
-        mPinIndex = pinIndex
+        mPinPageIndex = pinPage
+        mPinItemIndex = pinIndex
     }
 
     private fun onTargetJumpSuc() {
@@ -423,7 +427,7 @@ class WebActivity : AppCompatActivity() {
                             SINGLE_LOOP_PAGE_MAX,
                             SINGLE_LOOP_PAGE_MAX_DEFAULT)
                         val head =
-                            "var targetSites=$jsList; var page_max=$pageMax;var pinPage=$mPinPage; var pinIndex=$mPinIndex;"
+                            "var targetSites=$jsList; var page_max=$pageMax;var pinPage=$mPinPageIndex; var pinIndex=$mPinItemIndex;"
                         Log.e(MyTag, "jsList head=" + head)
                         view.loadUrl("javascript:$head$jsToNext")
 
@@ -593,6 +597,18 @@ class WebActivity : AppCompatActivity() {
             cookieSyncManager.sync()
         }
     }
+
+
+    @SuppressLint("SetTextI18n")
+    private fun updateUI() {
+        tv_cur_page.text = "第$mCurPageIndex 页"
+        tv_rec_look.text = """最近浏览:${mPinPageIndex}页${(mPinItemIndex)}项"""
+        tv_loop.text = """第${mCircleIndex}次循环"""
+        tv_kw.text = "关键词:" + mKeyWords[mKeyWordIndex].first
+    }
+
+
+
 }
 
 

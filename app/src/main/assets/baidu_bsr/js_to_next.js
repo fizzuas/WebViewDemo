@@ -44,6 +44,9 @@ function finish() {
         window.java_obj.requestFinished();
     };
 }
+
+
+
 var curTime = new Date().toLocaleString();
 console.log(curTime);
 
