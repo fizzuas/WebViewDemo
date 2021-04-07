@@ -9,10 +9,14 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import com.kydw.webviewdemo.*
 import com.kydw.webviewdemo.adapter.Model
+import com.kydw.webviewdemo.baidu_sougou.ERR_ARG1
+import com.kydw.webviewdemo.baidu_sougou.ERR_ARG2
+import com.kydw.webviewdemo.baidu_sougou.PageState
 import com.kydw.webviewdemo.bean.TUrl
 import com.kydw.webviewdemo.dialog.JAlertDialog
 import com.kydw.webviewdemo.util.*
@@ -34,6 +38,7 @@ const val TAG_CHECK = "check exception:\t"
 const val CHECK_TIME_INTERVAL = 60 * 1000L
 
 class WebActivity : AppCompatActivity() {
+    var mCurPageState: PageState = PageState.Index
     var isDealingWebError = false
     var mCircleCount = 1
     var mCircleIndex = 1
@@ -70,8 +75,7 @@ class WebActivity : AppCompatActivity() {
             }
             val activity = mActivity.get()
             when (msg.what) {
-                MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT -> {
-                    //次 页not  found，或者搜索满页， 下一个关键词
+                MSG_KEY_WORD -> {
                     activity?.nextKeyWord()
                 }
                 MSG_TARGET_JUMP_SUC -> {
@@ -79,31 +83,87 @@ class WebActivity : AppCompatActivity() {
                     activity?.onTargetJumpSuc()
                 }
                 MSG_WEB_VIEW_RECEIVE_ERROR -> {
-                    ToastUtil.showShort(activity, "检测到网络异常，在处理...")
-                    activity?.dealWebException()
+                    val errInfo = msg.data.getString(ERR_ARG1)!!
+                    val errUrl = msg.data.getString(ERR_ARG2)!!
+                    activity?.dealWebException(errInfo, errUrl)
                 }
                 MSG_CHECKING_WEB_UPDATE -> {
                     activity?.checkWebUpdate()
                 }
                 MSG_PAGE_PIN_INDEX -> {
-                    activity?.setLastIndex(msg.arg1, msg.arg2)
+                    activity?.setPinIndex(msg.arg1, msg.arg2)
                 }
                 MSG_PAGE_INDEX -> {
                     activity?.setPageIndex(msg.arg1)
+                }
+                MSG_LOOK_PAGE_DIVS_SMALL->{
+                    activity?.lookPageDivsSmall()
+                }
+                CLICK_NEXT_PAGE->{
+                    activity?.resetPin()
                 }
                 else -> {
                 }
             }
         }
     }
+    private fun dealWebException(errInfo: String, errUrl: String) {
+        LogUtils.d(MyTag, "dealWebException网络不可用\n$errInfo\n$errUrl")
+        if (Looper.myLooper() == mainLooper) {
+            if (errInfo == "net::ERR_NAME_NOT_RESOLVED") {
+                AlertDialog.Builder(this).setTitle("提示").setMessage("网络不可用\n$errInfo\n$errUrl")
+                    .setCancelable(true)
+                    .show()
+            } else {
+                ToastUtil.show(this, "网络不可用\n$errInfo\n$errUrl, 正在重载")
+                LogUtils.d(MyTag, "dealWebException webview reload")
+                webview.reload()
+            }
+
+        }
+    }
+
+    private fun resetPin() {
+        mPinItemIndex=0
+        mPinPageIndex=0
+    }
+
+    private fun lookPageDivsSmall() {
+        val tip = AlertDialog.Builder(this).setTitle("注意")
+            .setMessage("目标页面显示似乎异常(DIVS<3)\n").create()
+        tip.show()
+        GlobalScope.launch(Dispatchers.IO) {
+            delay(10000)
+            withContext(Dispatchers.Main) {
+                tip.dismiss()
+            }
+            delay(100)
+            withContext(Dispatchers.Main) {
+                webview.goBack()
+            }
+        }
+    }
+
+
+    @SuppressLint("SetTextI18n")
+    private fun updateUI() {
+        tv_cur_page.text = "第$mCurPageIndex 页"
+        tv_rec_look.text = """最近浏览:${mPinPageIndex}页${(mPinItemIndex)}项"""
+        tv_loop.text = """第${mCircleIndex}次循环"""
+        tv_kw.text = "关键词:" + mKeyWords[mKeyWordIndex].first
+    }
 
     private fun setPageIndex(pageIndex: Int) {
-        Log.e(TAG, "page=" + pageIndex)
+
+        mCurPageIndex=pageIndex
+        updateUI()
+
         val switchIPPages =
             getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(SWITCH_IP_PAGE_NUM, 0)
         val pageMax=getSharedPreferences(SP_NAME,Context.MODE_PRIVATE).getInt(SINGLE_LOOP_PAGE_MAX,0)
-        Log.e(TAG,"mPinIPPage="+mPinIPPage+",switchIPPages="+switchIPPages+",pageIndex="+ pageIndex)
+
         if (switchIPPages > 0 && (pageIndex > mPinIPPage) && (pageIndex % switchIPPages == 0)&&(pageIndex!=pageMax)) {
+            Log.e(TAG,"正在切换IP: 当前页$mCurPageIndex / 多少页切换IP $switchIPPages")
             mPinIPPage = pageIndex
             stopWebView()
             // 切换IP
@@ -148,10 +208,10 @@ class WebActivity : AppCompatActivity() {
 
     }
 
-    private fun setLastIndex(pinPage: Int, pinIndex: Int) {
-        Log.i(TAG, "setIndex: pinPage" + pinPage + ",pinIndex" + pinIndex)
+    private fun setPinIndex(pinPage: Int, pinIndex: Int) {
         mPinPageIndex = pinPage
         mPinItemIndex = pinIndex
+        updateUI()
     }
 
     private fun onTargetJumpSuc() {
@@ -166,20 +226,26 @@ class WebActivity : AppCompatActivity() {
         val curTime = Date().time
         val lastTime = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
             .getLong(KEY_LOAD_PAGE_TIME, curTime)
-        Log.i(MyTag, TAG_CHECK + "curTime=" + curTime + "\t" + "lastTime=" + lastTime)
-        Log.i(MyTag,
-            TAG_CHECK + "小于1分钟=" + "\t" + ((curTime - lastTime) < CHECK_TIME_INTERVAL).toString())
-
+        Log.i(MyTag,   "检查页面有无卡住,当前页面已加载"+(curTime - lastTime)/1000+"s")
         if ((curTime - lastTime) > CHECK_TIME_INTERVAL) {
-            Log.e(MyTag, TAG_CHECK + "WEB_NO_UPDATE_5_MIN")
-            ToastUtil.show(this, "检查到网页1分钟没有更新")
-            dealWebException()
+            val min=CHECK_TIME_INTERVAL/60000
+            Log.e(MyTag, "检查到停在一个界面超过"+ CHECK_TIME_INTERVAL/60000+"MIN")
+            val tip =
+                AlertDialog.Builder(this).setTitle("提示").setMessage("检查到界面有卡住超过 $min 分钟\n将回退到上一个界面")
+                    .create()
+            tip.show()
+            GlobalScope.launch(Dispatchers.IO) {
+                delay(6000)
+                withContext(Dispatchers.Main) {
+                    tip.dismiss()
+                    webViewGoBack()
+                }
+            }
         }
     }
 
     /*
     * 检查到页面卡住时
-    * webview 回调 error
     * */
     private fun dealWebException() {
         if (!isDealingWebError) {
@@ -190,7 +256,7 @@ class WebActivity : AppCompatActivity() {
                     mLoadingCheckNetDialog =
                         JAlertDialog.Builder(this@WebActivity)
                             .setContentView(R.layout.dialog_waiting_net)
-                            .setText(R.id.content, "发现异常，正在重启网络")
+                            .setText(R.id.content, "发现异")
                             .setWidth_Height_dp(300, 120).setCancelable(false)
                             .create()
                 }
@@ -212,10 +278,13 @@ class WebActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun webViewGoBack() {
         if (webview.canGoBack()) {
-            webview.goBack()
+            if (mCurPageState == PageState.LOOK || mCurPageState == PageState.SOU) {
+                webview.goBack()
+            } else {
+                webview.reload()
+            }
         } else {
             webview.loadUrl(baiduIndexUrl)
         }
@@ -233,7 +302,8 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun nextKeyWord() {
-        mPinIPPage = 0
+        resetPin()
+
         //切换IP
         if (mLoadingSwitchFlyDialog == null) {
             mLoadingSwitchFlyDialog =
@@ -294,7 +364,6 @@ class WebActivity : AppCompatActivity() {
                             //开启下一次循环
                             nextCircle()
                         }
-                        mCircleIndex++
                     }
                 }
             }
@@ -304,8 +373,14 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun nextCircle() {
+        mCircleIndex++
+
+        mPinPageIndex=0
+        mPinItemIndex=0
         mLoadingSwitchFlyDialog?.dismiss()
         mKeyWordIndex = 0
+        updateUI()
+
         mKeyWords.forEach {
             it.second.forEach {
                 it.isRequested = false
@@ -343,8 +418,14 @@ class WebActivity : AppCompatActivity() {
 
             override fun onReceivedError(p0: WebView?, p1: Int, p2: String?, p3: String?) {
                 super.onReceivedError(p0, p1, p2, p3)
-                handler.sendEmptyMessage(MSG_WEB_VIEW_RECEIVE_ERROR)
                 Log.e(MyTag, TAG_CHECK + "onReceivedError")
+                Log.e(MyTag, TAG_CHECK + "p1=" + p1 + ",p2=" + p2 + ",p3=" + p3)
+
+                val msg = Message()
+                msg.what = MSG_WEB_VIEW_RECEIVE_ERROR
+                msg.data.putString(ERR_ARG1, p2)
+                msg.data.putString(ERR_ARG2, p3)
+                handler.sendMessage(msg)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -354,9 +435,8 @@ class WebActivity : AppCompatActivity() {
                 if (stoped) {
                     return
                 }
-                Log.i(MyTag, TAG_CHECK + "progress=" + view!!.progress)
 
-                view.loadUrl(
+                view!!.loadUrl(
                     "javascript:" + "var url=\"${url!!}\";" +
                             "window.java_obj.showSource("
                             + "document.getElementsByTagName('html')[0].innerHTML,url);"
@@ -366,19 +446,21 @@ class WebActivity : AppCompatActivity() {
                 val siteInfo = mKeyWords[mKeyWordIndex].second
 
                 if (url == baiduIndexUrl) {
+                    mCurPageState=PageState.Index
                     Log.e(TAG, "百度首页=" + url)
                     //首页，提交表单
                     val jsForm =
                         application.assets.open("baidu_bsr/js_bd_2second.js").bufferedReader().use {
                             it.readText()
                         }
-                    Log.i(MyTag, "keyword$keyWord")
-                    Log.i(MyTag, "siteInfo$siteInfo")
                     val head = "var keyword=\"$keyWord\";"
                     view.loadUrl("javascript:$head$jsForm")
+                    Log.i(MyTag, "首页注入js    $head")
+
                 } else if (hasTargetSite(url,
                         siteInfo) && !url.startsWith("https://www.baidu.com/") && !url.startsWith("https://m.baidu.com/")
                 ) {
+                    mCurPageState=PageState.LOOK
                     Log.e(TAG, "目标页加载成功=$url")
                     siteInfo.forEach {
                         if (url.contains(it.url)) {
@@ -396,7 +478,6 @@ class WebActivity : AppCompatActivity() {
                     }
                     view.loadUrl("javascript:$head$jsLook")
                 } else if (url.contains("baidu.com")) {
-                    Log.e(TAG, "百度搜索后首页加载=$url")
                     if (url.contains("wappass.baidu.com/static/captcha/tuxing")) {
                         //验证码
                         Log.e(MyTag, "发现验证码界面加载$url")
@@ -406,7 +487,7 @@ class WebActivity : AppCompatActivity() {
                             }
                         view.loadUrl("javascript:$jsSwipe")
                     } else {
-
+                        mCurPageState=PageState.SOU
                         Log.e(MyTag, "发现下一页加载=" + url)
                         //Next 页
                         val jsToNext =
@@ -416,20 +497,22 @@ class WebActivity : AppCompatActivity() {
 
                         val jsList = StringBuilder()
                         jsList.append("[")
-                        for (i in siteInfo.indices) {
+                        for (i in siteInfo) {
 //                            if (siteInfo[i].url!=mLatestLookedUrl) {
-                            jsList.append("\"${siteInfo[i].url}\",")
+                            jsList.append("\"${i.url}\",")
 //                            }
                         }
                         jsList.append("]")
+                        LogUtils.e("jsList=$jsList")
 
                         val pageMax = getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).getInt(
                             SINGLE_LOOP_PAGE_MAX,
                             SINGLE_LOOP_PAGE_MAX_DEFAULT)
                         val head =
                             "var targetSites=$jsList; var page_max=$pageMax;var pinPage=$mPinPageIndex; var pinIndex=$mPinItemIndex;"
-                        Log.e(MyTag, "jsList head=" + head)
                         view.loadUrl("javascript:$head$jsToNext")
+                        Log.e(MyTag, "下一页  注入 js=\t$head")
+
 
                     }
                 }
@@ -499,10 +582,8 @@ class WebActivity : AppCompatActivity() {
         val siteInfo = mKeyWords[mKeyWordIndex].second
         val jsList = StringBuilder()
         jsList.append("[")
-        for (i in siteInfo.indices) {
-            if (!siteInfo[i].isRequested) {
-                jsList.append("\"${siteInfo[i].url}\",")
-            }
+        for (i in siteInfo) {
+                jsList.append("\"${i.url}\",")
         }
         jsList.append("]")
         Log.e(MyTag, "jsList=" + jsList)
@@ -599,13 +680,11 @@ class WebActivity : AppCompatActivity() {
     }
 
 
-    @SuppressLint("SetTextI18n")
-    private fun updateUI() {
-        tv_cur_page.text = "第$mCurPageIndex 页"
-        tv_rec_look.text = """最近浏览:${mPinPageIndex}页${(mPinItemIndex)}项"""
-        tv_loop.text = """第${mCircleIndex}次循环"""
-        tv_kw.text = "关键词:" + mKeyWords[mKeyWordIndex].first
+    private fun setCurPage(pageIndex: Int) {
+        mCurPageIndex = pageIndex
+        updateUI()
     }
+
 
 
 
@@ -616,11 +695,11 @@ private class InJavaScriptLocalObj(val context: Context) {
     @JavascriptInterface
     fun showSource(html: String, url: String) {
         Log.i(MyTag, "showSource")
-        appendFile(
-            "\n" + "url=" + url + "\n" + html.subSequence(0, 50) + "\n",
-            context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls.txt",
-            context
-        )
+//        appendFile(
+//            "\n" + "url=" + url + "\n" + html.subSequence(0, 50) + "\n",
+//            context.getExternalFilesDir(null)!!.absolutePath + File.separator + "htmls.txt",
+//            context
+//        )
         // 写入当前网络加载成功的时间
         val date = Date()
         val curTime = date.time
@@ -644,17 +723,14 @@ private class InJavaScriptLocalObj(val context: Context) {
     }
 
     @JavascriptInterface
-    fun requestFinished() {
-        Log.i(TAG, "requestFinished" + (Looper.myLooper() == Looper.getMainLooper()))
+    fun nextKeyword() {
         GlobalScope.launch(Dispatchers.Main) {
-            // 40页都找不到，下一页异常
-            (context as WebActivity).handler.sendEmptyMessage(MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT)
+            (context as WebActivity).handler.sendEmptyMessage(MSG_KEY_WORD)
         }
     }
 
     @JavascriptInterface
     fun finish() {
-        Log.i(TAG, "finish")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
             (context as WebActivity).handler.sendEmptyMessage(MSG_TARGET_JUMP_SUC)
@@ -677,7 +753,6 @@ private class InJavaScriptLocalObj(val context: Context) {
 
     @JavascriptInterface
     fun pinIndex(pinPage: Int, pinIndex: Int) {
-        Log.i(TAG, "pinPage=$pinPage;" + "pinIndex=$pinIndex")
         GlobalScope.launch(Dispatchers.Main) {
             // 目标网页跳转成功
             val msg = Message()
@@ -694,6 +769,23 @@ private class InJavaScriptLocalObj(val context: Context) {
             val msg = Message()
             msg.what = MSG_PAGE_INDEX
             msg.arg1 = page
+            (context as WebActivity).handler.sendMessage(msg)
+        }
+    }
+    @JavascriptInterface
+    fun  lookPageError(){
+        GlobalScope.launch(Dispatchers.Main) {
+            val msg = Message()
+            msg.what = MSG_LOOK_PAGE_DIVS_SMALL
+            (context as WebActivity).handler.sendMessage(msg)
+        }
+    }
+
+    @JavascriptInterface
+    fun  clickNextPage(){
+        GlobalScope.launch(Dispatchers.Main) {
+            val msg = Message()
+            msg.what = CLICK_NEXT_PAGE
             (context as WebActivity).handler.sendMessage(msg)
         }
     }

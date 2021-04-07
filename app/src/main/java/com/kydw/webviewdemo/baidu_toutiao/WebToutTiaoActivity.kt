@@ -82,7 +82,7 @@ class WebToutTiaoActivity : AppCompatActivity() {
             }
             val activity = mActivity.get()
             when (msg.what) {
-                MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT -> {
+                MSG_KEY_WORD -> {
                     //页面异常，没有"下一页"Node"
                     activity?.nextKeyWord()
                 }
@@ -642,7 +642,7 @@ private class InJavaScriptLocalObj(val context: Context) {
         GlobalScope.launch(Dispatchers.Main) {
             // 页面没有"下一页"，页面异常
             (context as WebToutTiaoActivity).handler.sendEmptyMessage(
-                MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT)
+                MSG_KEY_WORD)
         }
     }
 

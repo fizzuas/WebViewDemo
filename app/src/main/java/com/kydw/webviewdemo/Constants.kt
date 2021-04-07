@@ -18,7 +18,7 @@ const val KEY_LOAD_CIRCLE_LAST_INDEX = "KEY_LOAD_CIRCLE_LAST_INDEX"
 
 
 // WebActivity handler消息key
-const val MSG_PAGE_NEXT_EXCEPTION_OR_NOT_FOUNT = 0
+const val MSG_KEY_WORD = 0
 const val MSG_TARGET_JUMP_SUC = 1
 const val MSG_WEB_VIEW_RECEIVE_ERROR = 2
 const val MSG_WEB_VIEW_SET_INDEX = 3
@@ -31,6 +31,7 @@ const val NOT_FOUND_NEXT_NODE = 10
 const val NOT_FOUND_RESULT_DIV = 11
 const val REQUEST_NEXT_TIME_OUT = 12
 const val NOT_FOUND_CONTENT = 13
+const val CLICK_NEXT_PAGE=14
 
 const val KEY_CACHE_LIST = "KEY_CACHE_LIST"
 

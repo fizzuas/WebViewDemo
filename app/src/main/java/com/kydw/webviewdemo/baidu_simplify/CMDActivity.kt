@@ -68,12 +68,12 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
 
 
     var models = mutableListOf<Model>(
-        Model("site:pewdo.com", "pewdo.com"),
-        Model("site:68681313.cn", "68681313.cn")
+//        Model("site:pewdo.com", "pewdo.com")
+//        Model("site:68681313.cn", "68681313.cn")
 //
 //
-//        Model("site:oillara.com", "oillara.com"),
-//        Model("site:lcbc.net baidukey.com", "lcbc.net baidukey.com")
+        Model("site:oillara.com", "oillara.com"),
+        Model("site:lcbc.net baidukey.com", "lcbc.net baidukey.com")
     )
 
     private val modelAdapter: ModelAdapter = ModelAdapter(models)
@@ -380,7 +380,7 @@ class CMDActivity : AppCompatActivity(), DialogAddKeySite.OnConfirmClickListener
     }
 
     override fun onAddKeySiteConfirm(kws: MutableList<String>, sites: MutableList<String>) {
-        Log.i(MyTag, "kws" + kws.toString() + ",sites" + sites.toString())
+        Log.i(MyTag, "kws$kws,sites$sites")
 
         for (i in 0..kws.lastIndex) {
             sites.forEach {

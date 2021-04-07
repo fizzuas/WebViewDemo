@@ -154,7 +154,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
-        android:text="浏览多少页面切换IP(搜狗不支持)"
+        android:text="浏览多少页面切换IP(只支持百度)"
         android:textColor="#200"
         android:textSize="17sp"
         app:layout_constraintBottom_toBottomOf="@id/view3"
@@ -223,7 +223,7 @@
         app:layout_constraintTop_toBottomOf="@id/view"
         android:layout_marginTop="15dp"
         android:text="注意：\n1.页面浏览时间 输入小于5秒按 5秒处理。\n2.添加网址site:kydz,按“site:kydz”搜索,按kydz匹配\n
-3.搜狗搜索不支持设置页面切换IP"/>
+3.设置页面切换IP 功能 搜狗支持，百度不支持"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
